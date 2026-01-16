@@ -1,7 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'        // لاحظ: حذفنا src
-import './index.css'               // لاحظ: حذفنا src
+// بما أننا داخل مجلد src، نستدعي الملفات مباشرة بنقطة فقط
+import App from './App.jsx'
+import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
