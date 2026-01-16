@@ -1,221 +1,152 @@
 import React, { useState, useEffect } from 'react';
-import { SetupScreen, NightPhase, DayResult, VotingPhase } from './ui/Screens';
-import { Button, PassDeviceScreen } from './ui/Components';
-import { 
-  PHASES, ROLES, 
-  distributeRoles, createNightQueue, checkWinCondition 
-} from './logic/gameEngine';
+
+// قائمة الأدوار المتاحة
+const ROLES = [
+  { id: 'mafia', label: 'زعيم المافيا 🕶️', team: 'mafia', count: 1 },
+  { id: 'doctor', label: 'الطبيب 🩺', team: 'villager', count: 1 },
+  { id: 'detective', label: 'المحقق 🕵️‍♂️', team: 'villager', count: 1 },
+  { id: 'villager', label: 'مواطن 👱', team: 'villager', count: 1 }, // يمكن زيادتهم
+];
 
 function App() {
-  // ==========================================
-  // 1. Game State (حالة اللعبة)
-  // ==========================================
-  const [phase, setPhase] = useState(PHASES.SETUP);
+  const [phase, setPhase] = useState('setup'); // setup, role-reveal, night, day, vote, game-over
   const [players, setPlayers] = useState([]);
-  const [nightQueue, setNightQueue] = useState([]);
-  
-  // تتبع أحداث الليلة (من قتل من؟ من عالج من؟)
-  const [nightActions, setNightActions] = useState({ mafiaTarget: null, doctorTarget: null });
-  
-  // نتيجة الصباح (اسم المقتول أو null)
-  const [morningVictim, setMorningVictim] = useState(null);
-  
-  // المتهم في التصويت
-  const [suspect, setSuspect] = useState(null);
-  const [winner, setWinner] = useState(null);
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  const [inputName, setInputName] = useState('');
+  const [rolesList, setRolesList] = useState([]);
+  const [showRole, setShowRole] = useState(false);
+  const [logs, setLogs] = useState([]);
 
-  // ==========================================
-  // 2. Handlers (التحكم في اللعبة)
-  // ==========================================
+  // --- 1. مرحلة الإعداد: إضافة اللاعبين ---
+  const addPlayer = () => {
+    if (inputName.trim() === "") return;
+    setPlayers([...players, { name: inputName, role: null, isAlive: true }]);
+    setInputName("");
+  };
 
-  // --- بدء اللعبة ---
-  const handleStartGame = (names) => {
-    const newPlayers = distributeRoles(names);
+  const startGame = () => {
+    if (players.length < 3) {
+      alert("تحتاج 3 لاعبين على الأقل!");
+      return;
+    }
+    assignRoles();
+  };
+
+  // توزيع الأدوار عشوائياً
+  const assignRoles = () => {
+    let availableRoles = [];
+    
+    // نضمن وجود مافيا وطبيب ومحقق
+    availableRoles.push(ROLES.find(r => r.id === 'mafia'));
+    availableRoles.push(ROLES.find(r => r.id === 'doctor'));
+    if (players.length >= 4) availableRoles.push(ROLES.find(r => r.id === 'detective'));
+
+    // الباقي مواطنين
+    while (availableRoles.length < players.length) {
+      availableRoles.push(ROLES.find(r => r.id === 'villager'));
+    }
+
+    // خلط الأدوار
+    availableRoles = availableRoles.sort(() => Math.random() - 0.5);
+
+    // تعيينها للاعبين
+    const newPlayers = players.map((p, index) => ({
+      ...p,
+      role: availableRoles[index]
+    }));
+
     setPlayers(newPlayers);
-    startNight(newPlayers);
+    setPhase('role-reveal');
   };
 
-  // --- بدء الليل ---
-  const startNight = (currentPlayers) => {
-    // تجهيز طابور عشوائي لليل
-    const queue = createNightQueue(currentPlayers);
-    setNightQueue(queue);
-    setNightActions({ mafiaTarget: null, doctorTarget: null });
-    setPhase(PHASES.NIGHT_TURN);
-  };
-
-  // --- استلام أكشن من لاعب في الليل ---
-  const handleNightAction = (player, targetId) => {
-    // تحديث حالة الطبيب إذا عالج نفسه
-    if (player.role === ROLES.DOCTOR && player.id === targetId) {
-      setPlayers(prev => prev.map(p => p.id === player.id ? { ...p, hasSelfHealed: true } : p));
-    }
-
-    // تسجيل الأكشن
-    setNightActions(prev => {
-      const newActions = { ...prev };
-      if (player.role === ROLES.MAFIA) newActions.mafiaTarget = targetId; // آخر مافيا يقرر
-      if (player.role === ROLES.DOCTOR) newActions.doctorTarget = targetId;
-      return newActions;
-    });
-  };
-
-  // --- نهاية الليل وحساب النتائج ---
-  const handleNightEnd = () => {
-    const { mafiaTarget, doctorTarget } = nightActions;
-    let victimName = null;
-
-    // المنطق: هل نجح القتل؟
-    if (mafiaTarget !== null) {
-      if (mafiaTarget !== doctorTarget) {
-        // القتل نجح
-        const victimIndex = players.findIndex(p => p.id === mafiaTarget);
-        victimName = players[victimIndex].name;
-        
-        // تحديث اللاعب ليصبح ميت
-        const updatedPlayers = players.map(p => 
-          p.id === mafiaTarget ? { ...p, isAlive: false } : p
-        );
-        setPlayers(updatedPlayers);
-
-        // التحقق من الفوز فوراً
-        const winResult = checkWinCondition(updatedPlayers);
-        if (winResult) {
-          setWinner(winResult);
-          setPhase(PHASES.GAME_OVER);
-          return;
-        }
-      } else {
-        // الطبيب أنقذه! (ليلة هادئة)
-        // لا نفعل شيئاً، victimName يبقى null
-      }
-    }
-
-    setMorningVictim(victimName);
-    setPhase(PHASES.DAY_RESULT);
-  };
-
-  // --- التعامل مع نتائج التصويت ---
-  const handleVoteComplete = (votes) => {
-    // حساب الأصوات
-    let maxVotes = 0;
-    let topCandidateId = null;
-    let isTie = false;
-
-    Object.entries(votes).forEach(([id, count]) => {
-      if (count > maxVotes) {
-        maxVotes = count;
-        topCandidateId = id;
-        isTie = false;
-      } else if (count === maxVotes) {
-        isTie = true; // تعادل
-      }
-    });
-
-    if (isTie || topCandidateId === null) {
-      alert("تعادل في الأصوات! الجميع يذهب للنوم.. 😴");
-      startNight(players);
+  // --- 2. كشف الأدوار (Pass & Play) ---
+  const nextPlayerReveal = () => {
+    setShowRole(false);
+    if (currentPlayerIndex + 1 < players.length) {
+      setCurrentPlayerIndex(currentPlayerIndex + 1);
     } else {
-      // وجدنا متهماً
-      const suspectPlayer = players.find(p => p.id === parseInt(topCandidateId));
-      setSuspect(suspectPlayer);
-      setPhase(PHASES.EXECUTION);
+      setPhase('night');
+      setCurrentPlayerIndex(0);
     }
   };
 
-  // --- تنفيذ الإعدام ---
-  const executeSuspect = (shouldExecute) => {
-    if (shouldExecute) {
-      // قتل المتهم
-      const updatedPlayers = players.map(p => 
-        p.id === suspect.id ? { ...p, isAlive: false } : p
-      );
-      setPlayers(updatedPlayers);
-      
-      const winResult = checkWinCondition(updatedPlayers);
-      if (winResult) {
-        setWinner(winResult);
-        setPhase(PHASES.GAME_OVER);
-      } else {
-        startNight(updatedPlayers);
-      }
-    } else {
-      // العفو عنه
-      alert("تم العفو عن المتهم! يحل الظلام..");
-      startNight(players);
-    }
-  };
-
-  // ==========================================
-  // 3. Rendering (عرض الشاشات حسب المرحلة)
-  // ==========================================
+  // --- واجهة المستخدم (Render) ---
   return (
-    <div className="App">
-      {/* 1. شاشة الإعداد */}
-      {phase === PHASES.SETUP && (
-        <SetupScreen onStartGame={handleStartGame} />
-      )}
+    <div className="container">
+      
+      {/* الشعار والعنوان */}
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h1 className="fade-in">لعبة المافيا</h1>
+        <p style={{ opacity: 0.8 }}>نسخة الجوال الاحترافية</p>
+      </div>
 
-      {/* 2. شاشة الليل (حلقة التمرير) */}
-      {phase === PHASES.NIGHT_TURN && (
-        <NightPhase 
-          queue={nightQueue} 
-          players={players} 
-          onAction={handleNightAction}
-          onNightEnd={handleNightEnd}
-        />
-      )}
+      {/* --- شاشة 1: إدخال الأسماء --- */}
+      {phase === 'setup' && (
+        <div className="card fade-in">
+          <h2>مرحباً بكم! 👋</h2>
+          <p>سجل أسماء اللاعبين للبدء</p>
+          
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input 
+              type="text" 
+              className="input-field"
+              placeholder="اسم اللاعب"
+              value={inputName}
+              onChange={(e) => setInputName(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
+            />
+          </div>
+          <button className="btn" onClick={addPlayer}>إضافة لاعب +</button>
 
-      {/* 3. شاشة الصباح (النتيجة) */}
-      {phase === PHASES.DAY_RESULT && (
-        <DayResult 
-          killedPlayerName={morningVictim} 
-          onStartDiscussion={() => setPhase(PHASES.DISCUSSION)} 
-        />
-      )}
-
-      {/* 4. شاشة النقاش (مؤقت) */}
-      {phase === PHASES.DISCUSSION && (
-        <div className="center-content">
-          <h1>🗣️ وقت النقاش</h1>
-          <p>لديك 3 دقائق لإقناع الآخرين..</p>
-          {/* يمكنك إضافة عداد تنازلي هنا لاحقاً */}
-          <Button text="انتهى النقاش -> التصويت" onClick={() => setPhase(PHASES.VOTING)} />
-        </div>
-      )}
-
-      {/* 5. شاشة التصويت */}
-      {phase === PHASES.VOTING && (
-        <VotingPhase players={players} onVoteComplete={handleVoteComplete} />
-      )}
-
-      {/* 6. شاشة الإعدام (الحكم النهائي) */}
-      {phase === PHASES.EXECUTION && (
-        <div className="center-content">
-          <h1 style={{color: 'red'}}>المتهم: {suspect?.name}</h1>
-          <p>لديه 30 ثانية للدفاع عن نفسه...</p>
-          <h2>هل نعدمه؟</h2>
-          <Button text="👍 نعم، إعدام" onClick={() => executeSuspect(true)} variant="danger" />
-          <Button text="👎 لا، عفو" onClick={() => executeSuspect(false)} variant="secondary" />
-        </div>
-      )}
-
-      {/* 7. شاشة نهاية اللعبة */}
-      {phase === PHASES.GAME_OVER && (
-        <div className="center-content">
-          <h1 style={{fontSize: '4rem'}}>🏆</h1>
-          <h1>فاز فريق {winner === 'mafia' ? "المافيا 😈" : "المدينة 👮‍♂️"}!</h1>
-          <div style={{textAlign: 'right', width: '100%', marginTop: '20px'}}>
-            <h3>كشف الأدوار:</h3>
-            {players.map(p => (
-              <div key={p.id} style={{borderBottom: '1px solid #333', padding: '10px'}}>
-                {p.name} - <span style={{color: p.role === ROLES.MAFIA ? 'red' : 'white'}}>{p.role}</span>
+          <div style={{ marginTop: '20px', textAlign: 'right' }}>
+            {players.map((p, i) => (
+              <div key={i} style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                {i + 1}. {p.name}
               </div>
             ))}
           </div>
-          <Button text="لعبة جديدة" onClick={() => setPhase(PHASES.SETUP)} />
+
+          {players.length > 0 && (
+            <button className="btn btn-primary" style={{ marginTop: '20px' }} onClick={startGame}>
+              بدء اللعب ({players.length}) 🚀
+            </button>
+          )}
         </div>
       )}
+
+      {/* --- شاشة 2: كشف الأدوار سراً --- */}
+      {phase === 'role-reveal' && (
+        <div className="card fade-in">
+          <h2>دور اللاعب: {players[currentPlayerIndex].name}</h2>
+          <p className="pulse-animation">⚠️ مرر الجوال لهذا اللاعب فقط!</p>
+          
+          {!showRole ? (
+            <button className="btn btn-primary" onClick={() => setShowRole(true)}>
+              اضغط لكشف دورك
+            </button>
+          ) : (
+            <div className="role-card fade-in">
+              <h1 style={{ fontSize: '3rem' }}>{players[currentPlayerIndex].role.label}</h1>
+              <p>احفظ دورك جيداً ولا تخبر أحداً!</p>
+              <button className="btn" onClick={nextPlayerReveal}>
+                فهمت، التالي 👉
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* --- شاشة 3: اللعبة (تجريبية) --- */}
+      {phase === 'night' && (
+        <div className="card fade-in">
+          <h1 style={{ color: '#888' }}>🌃 حل الليل...</h1>
+          <p>الجميع نيام الآن.</p>
+          <button className="btn btn-primary" onClick={() => setPhase('setup')}>
+            (هذه نسخة تجريبية - اضغط للعودة)
+          </button>
+        </div>
+      )}
+
     </div>
   );
 }
