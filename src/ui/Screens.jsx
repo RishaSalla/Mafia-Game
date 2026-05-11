@@ -26,7 +26,7 @@ export const SetupScreen = ({ onStartGame }) => {
     <div className="center-content">
       <h1>لعبة المافيا</h1>
       <h2>إعداد اللاعبين</h2>
-      <div style={{ width: '100%', maxHeight: '60vh', overflowY: 'auto' }}>
+      <div className="scroll-container" style={{ width: '100%', maxHeight: '50vh', overflowY: 'auto' }}>
         {names.map((name, i) => (
           <input
             key={i}
@@ -51,6 +51,7 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
   const [turnIndex, setTurnIndex] = useState(0);
   const [isReady, setIsReady] = useState(false); // هل اللاعب استلم الجهاز؟
   const [isRevealed, setIsRevealed] = useState(false); // هل يضغط مطولاً؟
+  const [detectiveResult, setDetectiveResult] = useState(null); // نتيجة المحقق
 
   const currentPlayer = queue[turnIndex];
   // فلترة قائمة الأحياء فقط لاختيارهم كأهداف
@@ -58,11 +59,13 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
 
   // الانتقال للاعب التالي
   const handleNext = (targetId = null) => {
-    // تسجيل الأكشن (إرسال الهدف المختار للمحرك)
+    // تسجيل الأكشن
     onAction(currentPlayer, targetId);
 
+    // إعادة ضبط الحالات
     setIsReady(false);
     setIsRevealed(false);
+    setDetectiveResult(null);
 
     if (turnIndex + 1 < queue.length) {
       setTurnIndex(turnIndex + 1);
@@ -73,7 +76,10 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
 
   // شاشة التمرير
   if (!isReady) {
-    return <PassDeviceScreen nextPlayerName={currentPlayer.name} onReady={() => setIsReady(true)} />;
+    return <PassDeviceScreen nextPlayerName={currentPlayer.name} onReady={() => {
+      if (navigator.vibrate) navigator.vibrate(50); // اهتزاز خفيف
+      setIsReady(true);
+    }} />;
   }
 
   // شاشة الدور (الضغط المطول)
@@ -83,7 +89,10 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
         <>
           <h2>دور: {currentPlayer.name}</h2>
           <HoldToRevealBtn 
-            onRevealStart={() => setIsRevealed(true)} 
+            onRevealStart={() => {
+              if (navigator.vibrate) navigator.vibrate([30, 50, 30]); // اهتزاز نبض القلب
+              setIsRevealed(true);
+            }} 
             onRevealEnd={() => setIsRevealed(false)} 
           />
         </>
@@ -94,14 +103,13 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
             {currentPlayer.isAlive ? "أنت " + getRoleName(currentPlayer.role) : "أنت ميت 💀"}
           </h2>
           
-          {/* محتوى الدور بناءً على الحالة والوظيفة */}
-          <div style={{ width: '100%', marginTop: '20px' }}>
+          <div className="scroll-container" style={{ width: '100%', marginTop: '20px', maxHeight: '50vh', overflowY: 'auto' }}>
             
             {/* 1. إذا كان ميت أو مواطن: أزرار وهمية */}
             {(!currentPlayer.isAlive || currentPlayer.role === ROLES.CITIZEN) && (
               <>
-                <p>المدينة نائمة.. انتظر قليلاً للتمويه</p>
-                <Button text="تأمين المنزل 🔒" onClick={() => setTimeout(() => handleNext(null), 2000)} />
+                <p className="typewriter-text">المدينة نائمة.. انتظر قليلاً للتمويه</p>
+                <Button text="تأمين المنزل 🔒" onClick={() => setTimeout(() => handleNext(null), 1000)} />
               </>
             )}
 
@@ -125,7 +133,6 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
                   <Button 
                     key={p.id} 
                     text={p.name + (p.id === currentPlayer.id ? " (أنت)" : "")} 
-                    // التحقق من قاعدة علاج النفس مرة واحدة
                     disabled={p.id === currentPlayer.id && currentPlayer.hasSelfHealed}
                     onClick={() => handleNext(p.id)} 
                   />
@@ -136,20 +143,31 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
              {/* 4. إذا كان محقق وحي */}
              {currentPlayer.isAlive && currentPlayer.role === ROLES.DETECTIVE && (
               <>
-                <p>اختر مشتبهاً به للكشف:</p>
-                {aliveTargets.map(p => (
-                  <Button 
-                    key={p.id} 
-                    text={`كشف ${p.name}`} 
-                    onClick={() => alert(p.role === ROLES.MAFIA ? "⚠️ هذا الشخص مافيا!" : "✅ هذا الشخص بريء")} 
-                    // ملاحظة: الـ alert هنا سيوقف التنفيذ حتى يضغط موافق، ثم يكمل
-                    // يمكن استبداله بشاشة نتيجة داخلية لتحسين التجربة لاحقاً
-                  />
-                ))}
-                <Button text="تخطيط (لا أريد الكشف)" onClick={() => handleNext(null)} />
+                {!detectiveResult ? (
+                  <>
+                    <p>اختر مشتبهاً به للكشف:</p>
+                    {aliveTargets.map(p => (
+                      <Button 
+                        key={p.id} 
+                        text={`كشف ${p.name}`} 
+                        onClick={() => {
+                          const isMafia = p.role === ROLES.MAFIA;
+                          setDetectiveResult(isMafia ? "⚠️ هذا الشخص مافيا!" : "✅ هذا الشخص بريء");
+                        }} 
+                      />
+                    ))}
+                    <Button text="تخطيط (لا أريد الكشف)" onClick={() => handleNext(null)} variant="secondary" />
+                  </>
+                ) : (
+                  <div className="fade-in">
+                    <h2 style={{ color: detectiveResult.includes('مافيا') ? 'red' : 'green' }}>
+                      {detectiveResult}
+                    </h2>
+                    <Button text="فهمت، إنهاء دوري" onClick={() => handleNext(null)} />
+                  </div>
+                )}
               </>
             )}
-
           </div>
         </div>
       )}
@@ -160,15 +178,17 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
 // ==========================================
 // 3. شاشة الصباح (إعلان النتائج)
 // ==========================================
-export const DayResult = ({ killedPlayerName, onStartDiscussion }) => (
-  <div className="center-content" style={{ backgroundColor: killedPlayerName ? '#300' : '#111' }}>
-    <h1 style={{ fontSize: '4rem' }}>{killedPlayerName ? "💀" : "🌅"}</h1>
-    <h1>
-      {killedPlayerName ? `استيقظنا على مقتل ${killedPlayerName}` : "أشرقت الشمس.. ليلة هادئة!"}
-    </h1>
-    <Button text="بدء النقاش" onClick={onStartDiscussion} />
-  </div>
-);
+export const DayResult = ({ killedPlayerName, onStartDiscussion }) => {
+  return (
+    <div className="center-content fade-in" style={{ backgroundColor: killedPlayerName ? '#3a0000' : '#112211', borderRadius: '24px', padding: '20px' }}>
+      <h1 style={{ fontSize: '4rem' }}>{killedPlayerName ? "💀" : "🌅"}</h1>
+      <h2 className="typewriter-text" style={{ color: 'white', lineHeight: '1.5' }}>
+        {killedPlayerName ? `استيقظت المدينة على فاجعة...\nلقد تم اغتيال ${killedPlayerName} الليلة الماضية.` : "أشرقت الشمس.. ليلة هادئة وسلام يعم المدينة!"}
+      </h2>
+      <Button text="بدء النقاش" onClick={onStartDiscussion} />
+    </div>
+  );
+};
 
 // ==========================================
 // 4. شاشة التصويت (Voting Loop)
@@ -178,11 +198,11 @@ export const VotingPhase = ({ players, onVoteComplete }) => {
   const [isReady, setIsReady] = useState(false);
   const [votes, setVotes] = useState({}); // { targetId: count }
 
-  // تخطي الأموات في التصويت (أو جعلهم يصوتون وهمياً كما اتفقنا، هنا سأجعلهم يمررون فقط)
   const currentVoter = players[voterIndex];
 
   const handleVote = (targetId) => {
-    if (targetId !== null) {
+    // لا نحتسب تصويت الميت الفعلي
+    if (targetId !== null && currentVoter.isAlive) {
       setVotes(prev => ({ ...prev, [targetId]: (prev[targetId] || 0) + 1 }));
     }
     
@@ -190,7 +210,7 @@ export const VotingPhase = ({ players, onVoteComplete }) => {
     if (voterIndex + 1 < players.length) {
       setVoterIndex(voterIndex + 1);
     } else {
-      onVoteComplete(votes); // إرسال النتائج للمحرك
+      onVoteComplete(votes); // إرسال النتائج
     }
   };
 
@@ -201,13 +221,23 @@ export const VotingPhase = ({ players, onVoteComplete }) => {
   return (
     <div className="center-content">
       <h2>التصويت: {currentVoter.name}</h2>
-      <p>من تشك فيه؟ (سري)</p>
-      <div style={{ maxHeight: '60vh', overflowY: 'auto', width: '100%' }}>
-        {players.filter(p => p.isAlive && p.id !== currentVoter.id).map(target => (
-          <Button key={target.id} text={`اتهام ${target.name}`} onClick={() => handleVote(target.id)} variant="danger" />
-        ))}
-        <Button text="امتناع عن التصويت" onClick={() => handleVote(null)} variant="secondary" />
-      </div>
+      
+      {!currentVoter.isAlive ? (
+        <div className="fade-in">
+          <p>أنت ميت.. لا يمكنك التصويت.</p>
+          <Button text="تمرير صامت للتمويه" onClick={() => handleVote(null)} />
+        </div>
+      ) : (
+        <>
+          <p>من تشك فيه؟ (سري)</p>
+          <div className="scroll-container" style={{ maxHeight: '50vh', overflowY: 'auto', width: '100%' }}>
+            {players.filter(p => p.isAlive && p.id !== currentVoter.id).map(target => (
+              <Button key={target.id} text={`اتهام ${target.name}`} onClick={() => handleVote(target.id)} variant="danger" />
+            ))}
+            <Button text="امتناع عن التصويت" onClick={() => handleVote(null)} variant="secondary" />
+          </div>
+        </>
+      )}
     </div>
   );
 };
