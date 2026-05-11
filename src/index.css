@@ -1,5 +1,5 @@
 /* =========================================
-   1. Import Fonts (خط كايرو + تجوال)
+   1. Import Fonts (خط كايرو)
    ========================================= */
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
 
@@ -14,7 +14,8 @@
   
   --primary-color: #00d2ff;   /* سماوي نيون */
   --secondary-color: #3a7bd5; /* أزرق */
-  --accent-pink: #ff007a;     /* وردي فاقع للمافيا */
+  --accent-pink: #ff007a;     /* وردي فاقع */
+  --accent-gold: #ffd700;     /* ذهبي للأدوار */
   --text-main: #ffffff;
   --text-dim: rgba(255, 255, 255, 0.7);
 }
@@ -23,24 +24,25 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent; /* إخفاء وميض اللمس في الجوال */
 }
 
 /* =========================================
-   3. Body & Background (الخلفية المتحركة)
+   3. Body & Background (تطابق شاشة الجوال)
    ========================================= */
 body {
   background: var(--bg-gradient);
   background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite; /* تحريك الخلفية */
+  animation: gradientBG 15s ease infinite;
   color: var(--text-main);
   font-family: 'Cairo', sans-serif;
   direction: rtl;
-  min-height: 100vh;
+  /* الأهم: استخدام dvh ليتطابق مع شاشات الجوال 100% بدون سكرول خارجي */
+  height: 100dvh; 
+  overflow: hidden; 
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow-x: hidden;
 }
 
 @keyframes gradientBG {
@@ -52,34 +54,47 @@ body {
 #root {
   width: 100%;
   max-width: 480px; /* حجم جوال مثالي */
-  padding: 20px;
-  min-height: 100vh;
+  height: 100dvh;
+  padding: 15px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
 }
 
 /* =========================================
-   4. Glass Cards (تصميم الزجاج)
+   4. Layout Classes (تنسيقات التموضع)
    ========================================= */
-.card, .role-card, .game-container {
+.center-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  text-align: center;
+}
+
+/* =========================================
+   5. Glass Cards (تصميم الزجاج)
+   ========================================= */
+.card, .role-card {
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
   border-radius: 24px;
-  padding: 30px;
+  padding: 30px 20px;
   box-shadow: var(--glass-shadow);
-  margin-bottom: 20px;
+  width: 100%;
   text-align: center;
-  transition: transform 0.3s ease;
 }
 
 /* =========================================
-   5. Typography (النصوص)
+   6. Typography (النصوص)
    ========================================= */
 h1 {
-  font-size: 2.8rem;
+  font-size: 2.5rem;
   font-weight: 900;
   margin-bottom: 15px;
   background: linear-gradient(to bottom, #fff, #aaa);
@@ -89,7 +104,7 @@ h1 {
 }
 
 h2 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   color: var(--primary-color);
   margin-bottom: 20px;
 }
@@ -102,17 +117,38 @@ p {
 }
 
 /* =========================================
-   6. Funky Inputs (حقول الإدخال)
+   7. Custom Scrollbar (تمرير داخلي أنيق)
+   ========================================= */
+.scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) rgba(0,0,0,0.2);
+}
+
+.scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 10px;
+}
+
+/* =========================================
+   8. Funky Inputs (حقول الإدخال)
    ========================================= */
 .input-field {
   width: 100%;
-  padding: 18px;
-  margin: 10px 0;
+  padding: 16px;
   background: rgba(0, 0, 0, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   text-align: center;
   font-family: 'Cairo', sans-serif;
   transition: all 0.3s ease;
@@ -122,52 +158,83 @@ p {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
-  transform: scale(1.02);
 }
 
 /* =========================================
-   7. Neon Buttons (الأزرار المضيئة)
+   9. Neon Buttons (الأزرار المضيئة)
    ========================================= */
 button, .btn {
   width: 100%;
-  padding: 18px;
-  margin-top: 15px;
+  padding: 16px;
+  margin-top: 10px;
   border: none;
   border-radius: 16px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   font-family: 'Cairo', sans-serif;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
+  color: white;
 }
 
-/* الزر الأساسي (أزرق مشع) */
+/* الزر الأساسي */
 .btn-primary, button {
   background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
-  color: white;
   box-shadow: 0 4px 15px rgba(58, 123, 213, 0.4);
 }
 
-.btn-primary:active, button:active {
-  transform: scale(0.95);
+/* الزر الثانوي */
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: none;
 }
 
-/* زر الخطر/المافيا (وردي مشع) */
+/* زر الخطر/المافيا */
 .btn-danger {
   background: linear-gradient(135deg, #ff0055, #ff007a);
   box-shadow: 0 4px 15px rgba(255, 0, 122, 0.4);
 }
 
+button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* =========================================
-   8. Animation Classes
+   10. Animations (الحركات)
    ========================================= */
 .fade-in {
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.4s ease-out forwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.pulse-animation {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 0, 122, 0.5); }
+  70% { box-shadow: 0 0 0 20px rgba(255, 0, 122, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 0, 122, 0); }
+}
+
+.typewriter-text {
+  overflow: hidden;
+  white-space: pre-wrap;
+  animation: typing 2s steps(40, end);
+}
+
+@keyframes typing {
+  from { max-height: 0; opacity: 0; }
+  to { max-height: 500px; opacity: 1; }
 }
