@@ -104,3 +104,87 @@ export const createNightQueue = (players) => {
     // ملاحظة: الميت يدخل في الطابور للتمويه كما اتفقنا
     return shuffleArray([...players]);
 };
+
+// ==========================================
+// Game Resolvers (دوال حسم النتائج الجديدة)
+// ==========================================
+
+/**
+ * معالجة أحداث الليل بناءً على اختيارات المافيا والطبيب
+ * @param {Array} players قائمة اللاعبين
+ * @param {Object} nightActions { mafiaTargetId, doctorTargetId }
+ * @returns {Object} { updatedPlayers, killedPlayer }
+ */
+export const resolveNight = (players, nightActions) => {
+  let killedPlayer = null;
+  const updatedPlayers = players.map(player => {
+    const newPlayer = { ...player };
+
+    // 1. تحديث حالة الطبيب إذا اختار علاج نفسه هذه الليلة
+    if (newPlayer.role === ROLES.DOCTOR && newPlayer.id === nightActions.doctorTargetId) {
+      newPlayer.hasSelfHealed = true;
+    }
+
+    // 2. التحقق من هدف المافيا ومقارنته بحماية الطبيب
+    if (newPlayer.id === nightActions.mafiaTargetId) {
+      if (newPlayer.id !== nightActions.doctorTargetId) {
+        // الطبيب لم يحمه، إذن يموت
+        newPlayer.isAlive = false;
+        killedPlayer = newPlayer;
+      }
+      // إذا كان هو هدف المافيا والطبيب معاً، يعيش ولا يحدث شيء
+    }
+
+    // تصفير حالة اللعب في الليل لليوم التالي
+    newPlayer.hasActedTonight = false; 
+
+    return newPlayer;
+  });
+
+  return { updatedPlayers, killedPlayer };
+};
+
+/**
+ * معالجة نتائج التصويت
+ * @param {Array} players قائمة اللاعبين
+ * @param {Object} votes { targetId: count }
+ * @returns {Object} { updatedPlayers, executedPlayer, isTie }
+ */
+export const resolveVoting = (players, votes) => {
+  // إذا لم يصوت أحد
+  if (Object.keys(votes).length === 0) {
+    return { updatedPlayers: players, executedPlayer: null, isTie: false };
+  }
+
+  let maxVotes = 0;
+  let targetsWithMaxVotes = [];
+
+  // حساب أعلى الأصوات
+  for (const [targetId, count] of Object.entries(votes)) {
+    if (count > maxVotes) {
+      maxVotes = count;
+      targetsWithMaxVotes = [Number(targetId)];
+    } else if (count === maxVotes) {
+      targetsWithMaxVotes.push(Number(targetId));
+    }
+  }
+
+  // إذا تعادل شخصان أو أكثر بأعلى الأصوات، لا يتم إعدام أحد
+  if (targetsWithMaxVotes.length > 1) {
+    return { updatedPlayers: players, executedPlayer: null, isTie: true };
+  }
+
+  // تحديد اللاعب الذي سيتم إعدامه
+  const executedId = targetsWithMaxVotes[0];
+  let executedPlayer = null;
+
+  const updatedPlayers = players.map(player => {
+    if (player.id === executedId) {
+      executedPlayer = { ...player, isAlive: false };
+      return executedPlayer;
+    }
+    return player;
+  });
+
+  return { updatedPlayers, executedPlayer, isTie: false };
+};
