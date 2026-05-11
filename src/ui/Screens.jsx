@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button, HoldToRevealBtn, PassDeviceScreen, RoleIcon } from './Components';
-import { ROLES } from '../logic/gameEngine';
+import { ROLES, NARRATOR } from '../logic/gameEngine';
 
 // ==========================================
 // Sound Helper (نظام الصوت المبدئي)
 // ==========================================
 const playSFX = (soundName) => {
-  // هذه الدالة جاهزة للعمل بمجرد إضافة الأصوات لمجلد public
-  // مثلاً: /sounds/gavel.mp3
   try {
     // const audio = new Audio(`/sounds/${soundName}.mp3`);
     // audio.play();
@@ -17,10 +15,39 @@ const playSFX = (soundName) => {
 };
 
 // ==========================================
+// SVG Art Components (الرسومات الفنية)
+// ==========================================
+const CitySkyline = () => (
+  <svg viewBox="0 0 100 40" width="100%" height="80px" style={{ opacity: 0.6, marginBottom: '20px' }}>
+    <rect x="10" y="15" width="15" height="25" fill="#111" />
+    <rect x="26" y="5" width="20" height="35" fill="#0a0a0a" />
+    <rect x="47" y="20" width="12" height="20" fill="#111" />
+    <rect x="60" y="10" width="18" height="30" fill="#050505" />
+    <rect x="79" y="18" width="15" height="22" fill="#111" />
+    <circle cx="85" cy="8" r="4" fill="var(--primary-gold)" opacity="0.8" />
+  </svg>
+);
+
+const NooseSVG = () => (
+  <svg viewBox="0 0 50 100" width="60px" height="120px" style={{ margin: '0 auto', display: 'block' }}>
+    <path d="M25 0 V 50" stroke="var(--text-dim)" strokeWidth="3" fill="none" />
+    <circle cx="25" cy="65" r="15" stroke="var(--text-dim)" strokeWidth="3" fill="none" />
+    <path d="M25 50 Q 30 55 25 60 Q 20 55 25 50" fill="var(--text-dim)" />
+  </svg>
+);
+
+const DetectiveEye = () => (
+  <svg viewBox="0 0 24 24" width="60px" height="60px" fill="none" stroke="var(--primary-gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '10px auto' }}>
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+// ==========================================
 // 1. شاشة الإعداد (Setup Screen)
 // ==========================================
 export const SetupScreen = ({ onStartGame }) => {
-  const [names, setNames] = useState(["", "", "", ""]); // 4 لاعبين مبدئياً
+  const [names, setNames] = useState(["", "", "", ""]);
 
   const handleNameChange = (index, val) => {
     const newNames = [...names];
@@ -38,9 +65,10 @@ export const SetupScreen = ({ onStartGame }) => {
 
   return (
     <div className="center-content card fade-in">
+      <CitySkyline />
       <h1>لعبة المافيا</h1>
       <h2 style={{ color: 'var(--text-dim)' }}>إعداد اللاعبين</h2>
-      <div className="scroll-container" style={{ width: '100%', maxHeight: '50vh', overflowY: 'auto', padding: '10px' }}>
+      <div className="scroll-container" style={{ width: '100%', maxHeight: '40vh', overflowY: 'auto', padding: '10px' }}>
         {names.map((name, i) => (
           <input
             key={i}
@@ -53,29 +81,119 @@ export const SetupScreen = ({ onStartGame }) => {
         ))}
       </div>
       <Button text="+ إضافة لاعب" onClick={addPlayer} variant="secondary" />
-      <Button text="بدء الجلسة الساحقة" onClick={startGame} />
+      <Button text="دخول المدينة" onClick={startGame} />
     </div>
   );
 };
 
 // ==========================================
-// 2. شاشات الراوي (Transitions)
+// 2. اليوم الصفر: كشف الأدوار
+// ==========================================
+export const RoleRevealPhase = ({ queue, onRevealComplete }) => {
+  const [turnIndex, setTurnIndex] = useState(0);
+  const [isReady, setIsReady] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(false);
+
+  const currentPlayer = queue[turnIndex];
+
+  const handleNext = () => {
+    setIsReady(false);
+    setIsRevealed(false);
+    if (turnIndex + 1 < queue.length) {
+      setTurnIndex(turnIndex + 1);
+    } else {
+      onRevealComplete();
+    }
+  };
+
+  if (!isReady) {
+    return <PassDeviceScreen nextPlayerName={currentPlayer.name} onReady={() => {
+      if (navigator.vibrate) navigator.vibrate(50);
+      setIsReady(true);
+    }} />;
+  }
+
+  return (
+    <div className="center-content">
+      {!isRevealed ? (
+        <>
+          <h2 style={{ color: 'var(--text-dim)' }}>لمعرفة دورك السري: <span style={{color: 'white'}}>{currentPlayer.name}</span></h2>
+          <HoldToRevealBtn 
+            onRevealStart={() => {
+              playSFX('heartbeat_single');
+              if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+              setIsRevealed(true);
+            }} 
+            onRevealEnd={() => setIsRevealed(false)} 
+          />
+        </>
+      ) : (
+        <div className="role-card fade-in">
+          <RoleIcon role={currentPlayer.role} />
+          <h2 style={{color: 'var(--primary-gold)', fontSize: '2.5rem', margin: '20px 0'}}>
+            أنت {getRoleName(currentPlayer.role)}
+          </h2>
+          <p className="typewriter-text" style={{ fontSize: '1.2rem' }}>
+            احفظ دورك جيداً، ولا تخبر أحداً به مهما حدث.
+          </p>
+          <Button text="فهمت، دور التالي" onClick={handleNext} style={{ marginTop: '30px' }} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
+// 3. التعارف المريب (First Day Intro)
+// ==========================================
+export const FirstDayIntro = ({ onTimeUp }) => {
+  const [timeLeft, setTimeLeft] = useState(60);
+
+  useEffect(() => {
+    playSFX('suspense_intro');
+    if (timeLeft <= 0) {
+      onTimeUp();
+      return;
+    }
+    const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft, onTimeUp]);
+
+  return (
+    <div className="center-content card fade-in">
+      <CitySkyline />
+      <h1 className="glitch-text" style={{ color: 'var(--bright-red)' }}>بينكم خونة!</h1>
+      <p style={{ fontSize: '1.2rem', lineHeight: '1.8' }}>
+        انظروا في أعين بعضكم البعض...<br/>
+        المافيا تجلس معكم الآن، تبتسم في وجوهكم.<br/>
+        لديكم دقيقة واحدة لتشتيت الانتباه قبل حلول الظلام.
+      </p>
+      <h2 style={{ fontSize: '5rem', fontFamily: 'monospace', margin: '20px 0' }}>
+        {timeLeft}
+      </h2>
+      <Button text="تخطي وبدء الليل" onClick={() => setTimeLeft(0)} variant="secondary" />
+    </div>
+  );
+};
+
+// ==========================================
+// 4. شاشة الراوي (الليل)
 // ==========================================
 export const NightTransition = ({ onProceed }) => {
   useEffect(() => { playSFX('night_wind'); }, []);
   return (
-    <div className="center-content card fade-in">
-      <h1 style={{ fontSize: '4rem', color: '#555' }}>🌃</h1>
-      <h2 className="typewriter-text" style={{ lineHeight: '1.8' }}>
+    <div className="center-content card fade-in" style={{ backgroundColor: 'black' }}>
+      <CitySkyline />
+      <h2 className="typewriter-text" style={{ lineHeight: '1.8', color: 'var(--text-dim)', fontSize: '1.4rem' }}>
         "الشمس تغيب، والظلال تطول..<br/> فليغمض الجميع أعينهم،<br/> وليبدأ تمرير الجوال سراً."
       </h2>
-      <Button text="بدء التمرير" onClick={onProceed} />
+      <Button text="بدء التمرير الدامي" onClick={onProceed} />
     </div>
   );
 };
 
 // ==========================================
-// 3. شاشة الليل (Night Loop)
+// 5. شاشة الليل (Night Loop)
 // ==========================================
 export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
   const [turnIndex, setTurnIndex] = useState(0);
@@ -127,7 +245,7 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
             {currentPlayer.isAlive ? getRoleName(currentPlayer.role) : "أنت ميت 💀"}
           </h2>
           
-          <div className="scroll-container" style={{ width: '100%', marginTop: '20px', maxHeight: '50vh', overflowY: 'auto' }}>
+          <div className="scroll-container" style={{ width: '100%', marginTop: '20px', maxHeight: '45vh', overflowY: 'auto' }}>
             
             {(!currentPlayer.isAlive || currentPlayer.role === ROLES.CITIZEN) && (
               <>
@@ -167,6 +285,7 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
               <>
                 {!detectiveResult ? (
                   <>
+                    <DetectiveEye />
                     <p>اختر مشتبهاً به للكشف:</p>
                     <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
                       {aliveTargets.map(p => (
@@ -201,35 +320,51 @@ export const NightPhase = ({ queue, players, onAction, onNightEnd }) => {
 };
 
 // ==========================================
-// 4. شاشة الصباح (إعلان النتائج)
+// 6. شاشة الصباح الديناميكية (إعلان النتائج)
 // ==========================================
-export const DayResult = ({ killedPlayerName, onStartDiscussion }) => {
-  useEffect(() => { playSFX(killedPlayerName ? 'rooster_shock' : 'rooster'); }, []);
+export const DayResult = ({ killedPlayerName, savedByDoctor, onStartDiscussion }) => {
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (savedByDoctor) {
+      playSFX('angel_choir');
+      setMessage(NARRATOR.getSaveMessage());
+    } else if (killedPlayerName) {
+      playSFX('rooster_shock');
+      setMessage(NARRATOR.getKillMessage(killedPlayerName));
+    } else {
+      playSFX('rooster');
+      setMessage("أشرقت الشمس.. ليلة هادئة وسلام يعم المدينة!");
+    }
+  }, [killedPlayerName, savedByDoctor]);
+
   return (
-    <div className="center-content card fade-in" style={{ borderColor: killedPlayerName ? 'var(--crimson-red)' : 'var(--primary-gold)' }}>
-      <h1 style={{ fontSize: '5rem', margin: 0 }}>{killedPlayerName ? "💀" : "🌅"}</h1>
+    <div className="center-content card fade-in" style={{ borderColor: killedPlayerName && !savedByDoctor ? 'var(--crimson-red)' : 'var(--primary-gold)' }}>
+      <h1 style={{ fontSize: '5rem', margin: 0 }}>
+        {savedByDoctor ? "🛡️" : (killedPlayerName ? "💀" : "🌅")}
+      </h1>
       <h2 className="typewriter-text" style={{ color: 'white', lineHeight: '1.8', margin: '20px 0' }}>
-        {killedPlayerName ? `استيقظت المدينة على فاجعة...\nلقد تم اغتيال [ ${killedPlayerName} ] الليلة الماضية.` : "أشرقت الشمس.. ليلة هادئة وسلام يعم المدينة!"}
+        {message}
       </h2>
-      <Button text="بدء المحكمة" onClick={onStartDiscussion} variant={killedPlayerName ? "danger" : "primary"} />
+      <Button text="بدء المحكمة" onClick={onStartDiscussion} variant={killedPlayerName && !savedByDoctor ? "danger" : "primary"} />
     </div>
   );
 };
 
 // ==========================================
-// 5. مؤقت النقاش (Discussion Timer)
+// 7. مؤقت النقاش (Discussion Timer)
 // ==========================================
 export const DiscussionPhase = ({ onTimeUp }) => {
-  const [timeLeft, setTimeLeft] = useState(120); // دقيقتين للنقاش
+  const [timeLeft, setTimeLeft] = useState(120);
 
   useEffect(() => {
     if (timeLeft <= 0) {
-      playSFX('gavel'); // ضربة المطرقة
+      playSFX('gavel');
       onTimeUp();
       return;
     }
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-    if (timeLeft === 10) playSFX('clock_ticking'); // صوت التكتكة في آخر 10 ثواني
+    if (timeLeft === 10) playSFX('clock_ticking');
     
     return () => clearInterval(timer);
   }, [timeLeft, onTimeUp]);
@@ -255,7 +390,7 @@ export const DiscussionPhase = ({ onTimeUp }) => {
 };
 
 // ==========================================
-// 6. شاشة التصويت (Voting Loop)
+// 8. شاشة التصويت (Voting Loop)
 // ==========================================
 export const VotingPhase = ({ players, onVoteComplete }) => {
   const [voterIndex, setVoterIndex] = useState(0);
@@ -306,7 +441,7 @@ export const VotingPhase = ({ players, onVoteComplete }) => {
 };
 
 // ==========================================
-// 7. شاشة فرز الأصوات السينمائية
+// 9. شاشة فرز الأصوات السينمائية
 // ==========================================
 export const VoteRevealPhase = ({ accusedPlayer, isTie, onProceed }) => {
   const [revealed, setRevealed] = useState(false);
@@ -316,7 +451,7 @@ export const VoteRevealPhase = ({ accusedPlayer, isTie, onProceed }) => {
     const timer = setTimeout(() => {
       playSFX(isTie ? 'gasp' : 'gavel');
       setRevealed(true);
-    }, 4000); // 4 ثواني من التوتر
+    }, 4000); 
     return () => clearTimeout(timer);
   }, [isTie]);
 
@@ -349,10 +484,10 @@ export const VoteRevealPhase = ({ accusedPlayer, isTie, onProceed }) => {
 };
 
 // ==========================================
-// 8. منصة الدفاع (The Last Stand)
+// 10. منصة الدفاع (The Last Stand)
 // ==========================================
 export const DefensePhase = ({ accusedPlayer, onDefenseEnd }) => {
-  const [timeLeft, setTimeLeft] = useState(30); // 30 ثانية للدفاع
+  const [timeLeft, setTimeLeft] = useState(30);
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -364,20 +499,23 @@ export const DefensePhase = ({ accusedPlayer, onDefenseEnd }) => {
   }, [timeLeft, onDefenseEnd]);
 
   return (
-    <div className="center-content card blood-glow fade-in">
-      <h1 style={{ color: 'var(--crimson-red)', fontSize: '2rem' }}>الكلمة الأخيرة</h1>
-      <h2 style={{ fontSize: '2.5rem', margin: '10px 0' }}>{accusedPlayer.name}</h2>
-      <p style={{ color: 'var(--text-main)' }}>تحدث الآن! أقنعهم ببراءتك قبل تنفيذ الحكم.</p>
-      <h2 style={{ fontSize: '6rem', fontFamily: 'monospace', color: 'var(--bright-red)', margin: '15px 0' }}>
+    <div className="center-content card blood-glow fade-in" style={{ position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: '-10px', left: '0', right: '0', opacity: 0.2 }}>
+        <NooseSVG />
+      </div>
+      <h1 style={{ color: 'var(--crimson-red)', fontSize: '2rem', position: 'relative', zIndex: 2 }}>الكلمة الأخيرة</h1>
+      <h2 style={{ fontSize: '2.5rem', margin: '10px 0', position: 'relative', zIndex: 2 }}>{accusedPlayer.name}</h2>
+      <p style={{ color: 'var(--text-main)', position: 'relative', zIndex: 2 }}>تحدث الآن! أقنعهم ببراءتك قبل تنفيذ الحكم.</p>
+      <h2 style={{ fontSize: '6rem', fontFamily: 'monospace', color: 'var(--bright-red)', margin: '15px 0', position: 'relative', zIndex: 2 }}>
         {timeLeft}
       </h2>
-      <Button text="تنفيذ الإعدام فوراً" onClick={onDefenseEnd} variant="danger" />
+      <Button text="تنفيذ الإعدام فوراً" onClick={onDefenseEnd} variant="danger" style={{ position: 'relative', zIndex: 2 }} />
     </div>
   );
 };
 
 // ==========================================
-// 9. Helper: اسم الدور بالعربي
+// Helper: اسم الدور بالعربي
 // ==========================================
 function getRoleName(role) {
   switch(role) {
