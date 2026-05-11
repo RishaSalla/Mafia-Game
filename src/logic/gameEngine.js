@@ -9,14 +9,17 @@ export const ROLES = {
   CITIZEN: "citizen",
 };
 
+// تمت إضافة مراحل جديدة لتناسب "مدير الجلسة" (الراوي، الفرز الدرامي، الدفاع)
 export const PHASES = {
   SETUP: "setup",             // إدخال الأسماء
-  NIGHT_INIT: "night_init",   // تجهيز الليلة (خلط الترتيب)
-  NIGHT_TURN: "night_turn",   // دور اللاعب الحالي
+  NIGHT_TRANSITION: "night_transition", // شاشة الراوي: حلول الظلام
+  NIGHT_TURN: "night_turn",   // تمرير الجوال السري
+  DAY_TRANSITION: "day_transition", // شاشة الراوي: إشراقة الشمس
   DAY_RESULT: "day_result",   // إعلان من مات
-  DISCUSSION: "discussion",   // وقت النقاش
-  VOTING: "voting",           // التصويت
-  DEFENSE: "defense",         // دفاع المتهم
+  DISCUSSION: "discussion",   // مؤقت المحكمة (مثال: دقيقتين)
+  VOTING: "voting",           // التصويت السري
+  VOTE_REVEAL: "vote_reveal", // الفرز السينمائي البطيء
+  DEFENSE: "defense",         // منصة الدفاع (المتهم يتحدث لـ 30 ثانية)
   EXECUTION: "execution",     // قرار الإعدام
   GAME_OVER: "game_over",     // نهاية اللعبة
 };
@@ -100,8 +103,6 @@ export const checkWinCondition = (players) => {
  * + الموتى (ليقوموا بالتمويه)
  */
 export const createNightQueue = (players) => {
-    // نأخذ نسخة من اللاعبين ونخلطهم
-    // ملاحظة: الميت يدخل في الطابور للتمويه كما اتفقنا
     return shuffleArray([...players]);
 };
 
@@ -111,9 +112,6 @@ export const createNightQueue = (players) => {
 
 /**
  * معالجة أحداث الليل بناءً على اختيارات المافيا والطبيب
- * @param {Array} players قائمة اللاعبين
- * @param {Object} nightActions { mafiaTargetId, doctorTargetId }
- * @returns {Object} { updatedPlayers, killedPlayer }
  */
 export const resolveNight = (players, nightActions) => {
   let killedPlayer = null;
@@ -132,7 +130,6 @@ export const resolveNight = (players, nightActions) => {
         newPlayer.isAlive = false;
         killedPlayer = newPlayer;
       }
-      // إذا كان هو هدف المافيا والطبيب معاً، يعيش ولا يحدث شيء
     }
 
     // تصفير حالة اللعب في الليل لليوم التالي
@@ -145,15 +142,12 @@ export const resolveNight = (players, nightActions) => {
 };
 
 /**
- * معالجة نتائج التصويت
- * @param {Array} players قائمة اللاعبين
- * @param {Object} votes { targetId: count }
- * @returns {Object} { updatedPlayers, executedPlayer, isTie }
+ * معالجة نتائج التصويت (تحديد المتهم فقط دون إعدامه ليتمكن من الدفاع عن نفسه)
  */
 export const resolveVoting = (players, votes) => {
   // إذا لم يصوت أحد
   if (Object.keys(votes).length === 0) {
-    return { updatedPlayers: players, executedPlayer: null, isTie: false };
+    return { accusedPlayer: null, isTie: false };
   }
 
   let maxVotes = 0;
@@ -169,22 +163,30 @@ export const resolveVoting = (players, votes) => {
     }
   }
 
-  // إذا تعادل شخصان أو أكثر بأعلى الأصوات، لا يتم إعدام أحد
+  // إذا تعادل شخصان أو أكثر بأعلى الأصوات، لا يوجد متهم واضح
   if (targetsWithMaxVotes.length > 1) {
-    return { updatedPlayers: players, executedPlayer: null, isTie: true };
+    return { accusedPlayer: null, isTie: true };
   }
 
-  // تحديد اللاعب الذي سيتم إعدامه
-  const executedId = targetsWithMaxVotes[0];
-  let executedPlayer = null;
+  // تحديد المتهم الأول
+  const accusedId = targetsWithMaxVotes[0];
+  const accusedPlayer = players.find(p => p.id === accusedId);
 
+  return { accusedPlayer, isTie: false };
+};
+
+/**
+ * تنفيذ الإعدام الفعلي (بعد استنفاد وقت منصة الدفاع)
+ */
+export const executePlayer = (players, playerId) => {
+  let executedPlayer = null;
   const updatedPlayers = players.map(player => {
-    if (player.id === executedId) {
+    if (player.id === playerId) {
       executedPlayer = { ...player, isAlive: false };
       return executedPlayer;
     }
     return player;
   });
 
-  return { updatedPlayers, executedPlayer, isTie: false };
+  return { updatedPlayers, executedPlayer };
 };
