@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { 
   SetupScreen, 
+  RoleRevealPhase,
+  FirstDayIntro,
   NightTransition, 
   NightPhase, 
   DayResult, 
@@ -12,6 +14,7 @@ import {
 import { 
   PHASES, 
   ROLES, 
+  NARRATOR,
   distributeRoles, 
   createNightQueue, 
   resolveNight, 
@@ -29,21 +32,39 @@ function App() {
   
   // حالات مؤقتة لعرض النتائج الدرامية
   const [killedLastNight, setKilledLastNight] = useState(null);
+  const [savedByDoctor, setSavedByDoctor] = useState(false);
   const [accusedPlayer, setAccusedPlayer] = useState(null);
   const [isTie, setIsTie] = useState(false);
   const [winner, setWinner] = useState(null);
+  const [executionMsg, setExecutionMsg] = useState("");
 
   // ==========================================
-  // 1. بدء اللعبة
+  // 1. بدء اللعبة (توزيع الأدوار والتمرير الأول)
   // ==========================================
   const handleStartGame = (names) => {
     const newPlayers = distributeRoles(names);
     setPlayers(newPlayers);
-    setPhase(PHASES.NIGHT_TRANSITION); // الذهاب لشاشة الراوي أولاً
+    // نجهز طابور التمرير لمعرفة الأدوار
+    setNightQueue(createNightQueue(newPlayers)); 
+    setPhase(PHASES.ROLE_REVEAL); 
   };
 
   // ==========================================
-  // 2. تجهيز وبدء طابور الليل
+  // 2. بعد كشف الأدوار -> التعارف المريب
+  // ==========================================
+  const handleRevealComplete = () => {
+    setPhase(PHASES.FIRST_DAY_INTRO);
+  };
+
+  // ==========================================
+  // 3. بعد التعارف -> شاشة الراوي (الليل)
+  // ==========================================
+  const handleIntroComplete = () => {
+    setPhase(PHASES.NIGHT_TRANSITION);
+  };
+
+  // ==========================================
+  // 4. تجهيز وبدء طابور الليل للعب
   // ==========================================
   const startNight = () => {
     setNightQueue(createNightQueue(players));
@@ -52,7 +73,7 @@ function App() {
   };
 
   // ==========================================
-  // 3. تسجيل خيارات الليل
+  // 5. تسجيل خيارات الليل
   // ==========================================
   const handleNightAction = (player, targetId) => {
     if (player.role === ROLES.MAFIA) {
@@ -63,12 +84,13 @@ function App() {
   };
 
   // ==========================================
-  // 4. نهاية الليل وإعلان الصباح
+  // 6. نهاية الليل وإعلان الصباح
   // ==========================================
   const handleNightEnd = () => {
-    const { updatedPlayers, killedPlayer } = resolveNight(players, nightActions);
+    const { updatedPlayers, killedPlayer, savedByDoctor: isSaved } = resolveNight(players, nightActions);
     setPlayers(updatedPlayers);
     setKilledLastNight(killedPlayer ? killedPlayer.name : null);
+    setSavedByDoctor(isSaved);
 
     // هل فاز أحد بعد القتل الليلي؟
     const winStatus = checkWinCondition(updatedPlayers);
@@ -81,7 +103,7 @@ function App() {
   };
 
   // ==========================================
-  // 5. نهاية التصويت والفرز
+  // 7. نهاية التصويت والفرز
   // ==========================================
   const handleVoteComplete = (votes) => {
     const { accusedPlayer, isTie } = resolveVoting(players, votes);
@@ -102,11 +124,14 @@ function App() {
   };
 
   // ==========================================
-  // 6. نهاية الدفاع وتنفيذ الإعدام
+  // 8. نهاية الدفاع وتنفيذ الإعدام
   // ==========================================
   const handleDefenseEnd = () => {
     const { updatedPlayers, executedPlayer } = executePlayer(players, accusedPlayer.id);
     setPlayers(updatedPlayers);
+    
+    // جلب نص درامي عشوائي للإعدام
+    setExecutionMsg(NARRATOR.getExecutionMessage(executedPlayer.name));
 
     // هل فاز أحد بعد الإعدام؟
     const winStatus = checkWinCondition(updatedPlayers);
@@ -126,13 +151,14 @@ function App() {
   };
 
   // ==========================================
-  // 7. إعادة اللعب
+  // 9. إعادة اللعب
   // ==========================================
   const resetGame = () => {
     setPhase(PHASES.SETUP);
     setPlayers([]);
     setWinner(null);
     setAccusedPlayer(null);
+    setSavedByDoctor(false);
   };
 
   // ==========================================
@@ -143,6 +169,16 @@ function App() {
       
       {phase === PHASES.SETUP && (
         <SetupScreen onStartGame={handleStartGame} />
+      )}
+
+      {/* اليوم الصفر: كشف الأدوار */}
+      {phase === PHASES.ROLE_REVEAL && (
+        <RoleRevealPhase queue={nightQueue} onRevealComplete={handleRevealComplete} />
+      )}
+
+      {/* اليوم الصفر: التعارف المريب */}
+      {phase === PHASES.FIRST_DAY_INTRO && (
+        <FirstDayIntro onTimeUp={handleIntroComplete} />
       )}
 
       {phase === PHASES.NIGHT_TRANSITION && (
@@ -161,6 +197,7 @@ function App() {
       {phase === PHASES.DAY_RESULT && (
         <DayResult 
           killedPlayerName={killedLastNight} 
+          savedByDoctor={savedByDoctor}
           onStartDiscussion={() => setPhase(PHASES.DISCUSSION)} 
         />
       )}
@@ -193,9 +230,11 @@ function App() {
 
       {/* شاشة الإعدام */}
       {phase === PHASES.EXECUTION && (
-        <div className="center-content fade-in card">
+        <div className="center-content fade-in card blood-glow">
           <h1 className="glitch-text" style={{ fontSize: '3rem', color: 'var(--crimson-red)' }}>تم الإعدام</h1>
-          <h2 style={{ lineHeight: '1.6', margin: '20px 0' }}>لقد تم إعدام المتهم:<br/><span style={{color: 'var(--primary-gold)', fontSize: '2rem'}}>{accusedPlayer?.name}</span> 💀</h2>
+          <h2 className="typewriter-text" style={{ lineHeight: '1.6', margin: '20px 0', fontSize: '1.5rem', color: 'white' }}>
+            {executionMsg}
+          </h2>
           <button className="btn btn-primary" onClick={closeExecution}>
             {winner ? "عرض النتيجة النهائية" : "العودة للنوم 🌃"}
           </button>
