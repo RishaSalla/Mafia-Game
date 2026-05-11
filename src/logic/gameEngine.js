@@ -9,19 +9,52 @@ export const ROLES = {
   CITIZEN: "citizen",
 };
 
-// تمت إضافة مراحل جديدة لتناسب "مدير الجلسة" (الراوي، الفرز الدرامي، الدفاع)
+// إضافة مراحل "اليوم الصفر" (كشف الأدوار والتعارف)
 export const PHASES = {
   SETUP: "setup",             // إدخال الأسماء
+  ROLE_REVEAL: "role_reveal", // تمرير الجوال لمعرفة الدور لأول مرة
+  FIRST_DAY_INTRO: "first_day_intro", // 60 ثانية تعارف مريب قبل أول ليلة
   NIGHT_TRANSITION: "night_transition", // شاشة الراوي: حلول الظلام
   NIGHT_TURN: "night_turn",   // تمرير الجوال السري
-  DAY_TRANSITION: "day_transition", // شاشة الراوي: إشراقة الشمس
-  DAY_RESULT: "day_result",   // إعلان من مات
-  DISCUSSION: "discussion",   // مؤقت المحكمة (مثال: دقيقتين)
+  DAY_RESULT: "day_result",   // إعلان نتيجة الليل (قتل أو إنقاذ)
+  DISCUSSION: "discussion",   // مؤقت المحكمة
   VOTING: "voting",           // التصويت السري
   VOTE_REVEAL: "vote_reveal", // الفرز السينمائي البطيء
   DEFENSE: "defense",         // منصة الدفاع (المتهم يتحدث لـ 30 ثانية)
   EXECUTION: "execution",     // قرار الإعدام
   GAME_OVER: "game_over",     // نهاية اللعبة
+};
+
+// ==========================================
+// السرد الديناميكي (Dynamic Narrator)
+// ==========================================
+
+export const NARRATOR = {
+  getKillMessage: (name) => {
+    const msgs = [
+      `استيقظت المدينة على صرخات مرعبة.. لقد تم العثور على جثة [ ${name} ] في زقاق مظلم.`,
+      `رصاصة غادرة في جنح الظلام أنهت حياة [ ${name} ] الليلة الماضية.`,
+      `فاجعة تهز المدينة! المافيا تنجح في تصفية [ ${name} ] بدم بارد.`,
+      `تم العثور على [ ${name} ] مسموماً في منزله.. المافيا لا ترحم.`
+    ];
+    return msgs[Math.floor(Math.random() * msgs.length)];
+  },
+  getSaveMessage: () => {
+    const msgs = [
+      `لقد حاولت المافيا اغتيال أحدهم الليلة.. ولكن طبيب المدينة البارع تدخل في اللحظة الأخيرة وأنقذ حياته!`,
+      `رصاصة المافيا أخطأت الهدف بفضل يقظة طبيب المدينة.. ليلة هادئة ولا ضحايا!`,
+      `كانت ليلة دموية، لكن براعة الطبيب حالت دون وقوع كارثة.. الجميع بخير.`
+    ];
+    return msgs[Math.floor(Math.random() * msgs.length)];
+  },
+  getExecutionMessage: (name) => {
+    const msgs = [
+      `حكمت المحكمة بإعدام المتهم [ ${name} ].. حبل المشنقة لا يكذب.`,
+      `المدينة قالت كلمتها.. [ ${name} ] يواجه مصيره المحتوم الآن!`,
+      `لا عذر للخونة.. تم تنفيذ حكم الإعدام بحق [ ${name} ].`
+    ];
+    return msgs[Math.floor(Math.random() * msgs.length)];
+  }
 };
 
 // ==========================================
@@ -115,6 +148,8 @@ export const createNightQueue = (players) => {
  */
 export const resolveNight = (players, nightActions) => {
   let killedPlayer = null;
+  let savedByDoctor = false; // تتبع حالة الإنقاذ الناجح
+
   const updatedPlayers = players.map(player => {
     const newPlayer = { ...player };
 
@@ -129,6 +164,9 @@ export const resolveNight = (players, nightActions) => {
         // الطبيب لم يحمه، إذن يموت
         newPlayer.isAlive = false;
         killedPlayer = newPlayer;
+      } else {
+        // المافيا اختارته والطبيب حماه في اللحظة الأخيرة
+        savedByDoctor = true;
       }
     }
 
@@ -138,7 +176,7 @@ export const resolveNight = (players, nightActions) => {
     return newPlayer;
   });
 
-  return { updatedPlayers, killedPlayer };
+  return { updatedPlayers, killedPlayer, savedByDoctor };
 };
 
 /**
