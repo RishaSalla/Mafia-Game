@@ -14,9 +14,11 @@ import {
   GatewayScreen, 
   MainMenuScreen, 
   SetupScreen, 
+  FirstDayIntroScreen,
   NightTransitionScreen, 
   NightTurnScreen, 
   DayResultScreen, 
+  DiscussionScreen,
   VotingScreen, 
   ExecutionScreen, 
   GameOverScreen 
@@ -24,24 +26,20 @@ import {
 import './index.css';
 
 export default function App() {
-  // حالة التحقق والقائمة
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mode, setMode] = useState(null);
   const [phase, setPhase] = useState(PHASES.SETUP);
   
-  // بيانات اللاعبين
-  const [players, setPlayers] = useState([]); // في البداية مصفوفة نصوص، ثم مصفوفة كائنات
+  const [players, setPlayers] = useState([]);
   const [nightQueue, setNightQueue] = useState([]);
   const [currentNightIndex, setCurrentNightIndex] = useState(0);
   const [nightActions, setNightActions] = useState({ wills: {} });
   
-  // نتائج الأحداث
   const [killedPlayer, setKilledPlayer] = useState(null);
   const [savedByDoctor, setSavedByDoctor] = useState(false);
   const [executedPlayer, setExecutedPlayer] = useState(null);
   const [deathWillMessage, setDeathWillMessage] = useState(null);
   
-  // حالة النهاية
   const [winner, setWinner] = useState(null);
   const [jesterWon, setJesterWon] = useState(false);
 
@@ -52,14 +50,15 @@ export default function App() {
     return isValid;
   };
 
-  // 2. بدء اللعبة
+  // 2. بدء اللعبة وتوزيع الأدوار
   const startGame = () => {
     const initializedPlayers = distributeRoles(players, mode);
     setPlayers(initializedPlayers);
-    startNight(initializedPlayers);
+    // التوجيه إلى مرحلة التمهيد والنقاش الأول بدلاً من الليل المباشر
+    setPhase(PHASES.FIRST_DAY_INTRO); 
   };
 
-  // 3. بدء دورة الليل (تستدعي الأحياء فقط)
+  // 3. بدء دورة الليل (الترتيب أصبح عشوائياً في كل ليلة)
   const startNight = (currentPlayers) => {
     const queue = createNightQueue(currentPlayers);
     setNightQueue(queue);
@@ -68,7 +67,7 @@ export default function App() {
     setPhase(PHASES.NIGHT_TRANSITION);
   };
 
-  // 4. معالجة أوامر اللاعب في الليل
+  // 4. معالجة أوامر الليل
   const handleNightActionComplete = (actions) => {
     const currentPlayer = nightQueue[currentNightIndex];
     const newActions = { ...nightActions };
@@ -76,8 +75,6 @@ export default function App() {
     if (currentPlayer.role === 'mafia' && actions.targetId) newActions.mafiaTargetId = actions.targetId;
     if (currentPlayer.role === 'doctor' && actions.targetId) newActions.doctorTargetId = actions.targetId;
     if (currentPlayer.role === 'vigilante' && actions.targetId) newActions.vigilanteTargetId = actions.targetId;
-    
-    // تسجيل الوصية الجنائية
     if (actions.willTargetId) newActions.wills[currentPlayer.id] = actions.willTargetId;
 
     setNightActions(newActions);
@@ -86,7 +83,6 @@ export default function App() {
       setCurrentNightIndex(currentNightIndex + 1);
       setPhase(PHASES.NIGHT_TRANSITION);
     } else {
-      // حسم نتائج الليل
       const result = resolveNight(players, newActions);
       setPlayers(result.updatedPlayers);
       setKilledPlayer(result.killedPlayer);
@@ -103,7 +99,7 @@ export default function App() {
     }
   };
 
-  // 5. معالجة نتائج تصويت النهار
+  // 5. معالجة التصويت في المحكمة
   const handleVoteComplete = (votes) => {
     const result = resolveVoting(players, votes);
     if (result.accusedPlayer) {
@@ -149,12 +145,16 @@ export default function App() {
   switch (phase) {
     case PHASES.SETUP:
       return <SetupScreen players={players} setPlayers={setPlayers} startGame={startGame} mode={mode} />;
+    case PHASES.FIRST_DAY_INTRO:
+      return <FirstDayIntroScreen onContinue={() => startNight(players)} />;
     case PHASES.NIGHT_TRANSITION:
       return <NightTransitionScreen targetPlayer={nightQueue[currentNightIndex]} onReady={() => setPhase(PHASES.NIGHT_TURN)} />;
     case PHASES.NIGHT_TURN:
       return <NightTurnScreen player={nightQueue[currentNightIndex]} players={players} mode={mode} onActionComplete={handleNightActionComplete} />;
     case PHASES.DAY_RESULT:
-      return <DayResultScreen killedPlayer={killedPlayer} savedByDoctor={savedByDoctor} deathWillMessage={deathWillMessage} onContinue={() => setPhase(PHASES.VOTING)} />;
+      return <DayResultScreen killedPlayer={killedPlayer} savedByDoctor={savedByDoctor} deathWillMessage={deathWillMessage} onContinue={() => setPhase(PHASES.DISCUSSION)} />;
+    case PHASES.DISCUSSION:
+      return <DiscussionScreen aliveCount={players.filter(p => p.isAlive).length} onContinue={() => setPhase(PHASES.VOTING)} />;
     case PHASES.VOTING:
       return <VotingScreen alivePlayers={players.filter(p => p.isAlive)} onVoteComplete={handleVoteComplete} />;
     case PHASES.EXECUTION:
@@ -162,6 +162,6 @@ export default function App() {
     case PHASES.GAME_OVER:
       return <GameOverScreen winner={winner} jesterWon={jesterWon} players={players} onRestart={handleRestart} />;
     default:
-      return <div className="center-content"><h2 style={{ color: "var(--primary-gold)" }}>جاري التحميل...</h2></div>;
+      return <div className="center-content"><h2 style={{ color: "var(--primary-gold)" }}>جاري تحميل ملفات القضية...</h2></div>;
   }
 }
