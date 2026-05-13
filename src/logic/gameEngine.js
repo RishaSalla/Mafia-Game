@@ -2,56 +2,67 @@
 // Constants & Types (الثوابت)
 // ==========================================
 
+export const MODES = {
+  CLASSIC: "classic",
+  ADVANCED: "advanced",
+};
+
 export const ROLES = {
   MAFIA: "mafia",
   DOCTOR: "doctor",
   DETECTIVE: "detective",
   CITIZEN: "citizen",
+  JESTER: "jester",       // المجنون
+  VIGILANTE: "vigilante", // القناص
 };
 
-// إضافة مراحل "اليوم الصفر" (كشف الأدوار والتعارف)
 export const PHASES = {
-  SETUP: "setup",             // إدخال الأسماء
-  ROLE_REVEAL: "role_reveal", // تمرير الجوال لمعرفة الدور لأول مرة
-  FIRST_DAY_INTRO: "first_day_intro", // 60 ثانية تعارف مريب قبل أول ليلة
-  NIGHT_TRANSITION: "night_transition", // شاشة الراوي: حلول الظلام
-  NIGHT_TURN: "night_turn",   // تمرير الجوال السري
-  DAY_RESULT: "day_result",   // إعلان نتيجة الليل (قتل أو إنقاذ)
-  DISCUSSION: "discussion",   // مؤقت المحكمة
-  VOTING: "voting",           // التصويت السري
-  VOTE_REVEAL: "vote_reveal", // الفرز السينمائي البطيء
-  DEFENSE: "defense",         // منصة الدفاع (المتهم يتحدث لـ 30 ثانية)
-  EXECUTION: "execution",     // قرار الإعدام
-  GAME_OVER: "game_over",     // نهاية اللعبة
+  SETUP: "setup",             
+  ROLE_REVEAL: "role_reveal", 
+  FIRST_DAY_INTRO: "first_day_intro", 
+  NIGHT_TRANSITION: "night_transition", 
+  NIGHT_TURN: "night_turn",   
+  DAY_RESULT: "day_result",   
+  DISCUSSION: "discussion",   
+  VOTING: "voting",           
+  VOTE_REVEAL: "vote_reveal", 
+  DEFENSE: "defense",         
+  EXECUTION: "execution",     
+  GAME_OVER: "game_over",     
 };
 
 // ==========================================
-// السرد الديناميكي (Dynamic Narrator)
+// السرد الديناميكي الصارم (بدون إيموجي)
 // ==========================================
-
 export const NARRATOR = {
   getKillMessage: (name) => {
     const msgs = [
-      `استيقظت المدينة على صرخات مرعبة.. لقد تم العثور على جثة [ ${name} ] في زقاق مظلم.`,
+      `تم العثور على جثة [ ${name} ] في زقاق مظلم.. المافيا لا ترحم.`,
       `رصاصة غادرة في جنح الظلام أنهت حياة [ ${name} ] الليلة الماضية.`,
-      `فاجعة تهز المدينة! المافيا تنجح في تصفية [ ${name} ] بدم بارد.`,
-      `تم العثور على [ ${name} ] مسموماً في منزله.. المافيا لا ترحم.`
+      `فاجعة تهز المدينة، تم تصفية [ ${name} ] بدم بارد.`
     ];
     return msgs[Math.floor(Math.random() * msgs.length)];
   },
   getSaveMessage: () => {
     const msgs = [
-      `لقد حاولت المافيا اغتيال أحدهم الليلة.. ولكن طبيب المدينة البارع تدخل في اللحظة الأخيرة وأنقذ حياته!`,
-      `رصاصة المافيا أخطأت الهدف بفضل يقظة طبيب المدينة.. ليلة هادئة ولا ضحايا!`,
-      `كانت ليلة دموية، لكن براعة الطبيب حالت دون وقوع كارثة.. الجميع بخير.`
+      `حاولت المافيا اغتيال أحدهم الليلة، لكن طبيب المدينة تدخل في اللحظة الأخيرة.`,
+      `رصاصة المافيا أخطأت الهدف بفضل يقظة طبيب المدينة.. لا ضحايا.`,
+      `ليلة دموية، لكن براعة الطبيب حالت دون وقوع كارثة.`
     ];
     return msgs[Math.floor(Math.random() * msgs.length)];
   },
   getExecutionMessage: (name) => {
     const msgs = [
       `حكمت المحكمة بإعدام المتهم [ ${name} ].. حبل المشنقة لا يكذب.`,
-      `المدينة قالت كلمتها.. [ ${name} ] يواجه مصيره المحتوم الآن!`,
-      `لا عذر للخونة.. تم تنفيذ حكم الإعدام بحق [ ${name} ].`
+      `المدينة قالت كلمتها.. [ ${name} ] يواجه مصيره المحتوم.`,
+      `لا عذر للخونة، تم تنفيذ حكم الإعدام بحق [ ${name} ].`
+    ];
+    return msgs[Math.floor(Math.random() * msgs.length)];
+  },
+  getWillMessage: (deadName, targetName) => {
+    const msgs = [
+      `وجدنا بجانب جثة ${deadName} دليلا يشير إلى: [ ${targetName} ].`,
+      `قبل أن يلفظ ${deadName} أنفاسه، ترك رسالة يتهم فيها: [ ${targetName} ].`
     ];
     return msgs[Math.floor(Math.random() * msgs.length)];
   }
@@ -60,15 +71,12 @@ export const NARRATOR = {
 // ==========================================
 // Helper Functions (دوال مساعدة)
 // ==========================================
-
-// خوارزمية فيشر-ييتس للخلط العشوائي (الأقوى عالمياً)
 export const shuffleArray = (array) => {
   let currentIndex = array.length, randomIndex;
   while (currentIndex !== 0) {
     randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex--;
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex], array[currentIndex]];
+    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
   }
   return array;
 };
@@ -77,121 +85,134 @@ export const shuffleArray = (array) => {
 // Core Logic (المنطق الأساسي)
 // ==========================================
 
-/**
- * دالة توزيع الأدوار بناءً على عدد اللاعبين
- * Rule: Mafia = floor(Total / 3.5)
- */
-export const distributeRoles = (playerNames) => {
+export const distributeRoles = (playerNames, mode) => {
   const total = playerNames.length;
-  const mafiaCount = Math.max(1, Math.floor(total / 3.5)); // على الأقل 1 مافيا
+  const mafiaCount = Math.max(1, Math.floor(total / 3.5)); 
   
-  // مصفوفة الأدوار المبدئية
   let roles = Array(total).fill(ROLES.CITIZEN);
   
-  // تعيين المافيا
+  // توزيع الأساسيات
   for (let i = 0; i < mafiaCount; i++) roles[i] = ROLES.MAFIA;
-  
-  // تعيين الطبيب والمحقق (دائماً واحد فقط)
   roles[mafiaCount] = ROLES.DOCTOR;
   roles[mafiaCount + 1] = ROLES.DETECTIVE;
 
-  // خلط الأدوار جيداً
+  // إضافة أدوار الطور المطور إذا كان العدد يسمح
+  if (mode === MODES.ADVANCED && total >= 6) {
+    roles[mafiaCount + 2] = ROLES.JESTER;
+    if (total >= 7) roles[mafiaCount + 3] = ROLES.VIGILANTE;
+  }
+
   roles = shuffleArray(roles);
 
-  // إنشاء كائنات اللاعبين
   return playerNames.map((name, index) => ({
     id: index,
     name: name,
     role: roles[index],
     isAlive: true,
-    // خاصية للطبيب: هل عالج نفسه سابقاً؟
     hasSelfHealed: false, 
-    // خاصية لتتبع الدور في الليل (هل لعب أم لا؟)
-    hasActedTonight: false 
+    bullets: roles[index] === ROLES.VIGILANTE ? 1 : 0, // القناص يملك رصاصة واحدة
+    deathWillTargetId: null // الوصية الأخيرة
   }));
 };
 
 /**
- * دالة التحقق من شروط الفوز
- * تعيد: "mafia", "citizen", أو null (اللعبة مستمرة)
+ * قانون الفوز السريع
  */
 export const checkWinCondition = (players) => {
   const activePlayers = players.filter(p => p.isAlive);
   const mafiaCount = activePlayers.filter(p => p.role === ROLES.MAFIA).length;
-  const citizenCount = activePlayers.length - mafiaCount;
+  // المجنون لا يُحسب مع المواطنين
+  const citizenCount = activePlayers.filter(p => p.role !== ROLES.MAFIA && p.role !== ROLES.JESTER).length;
 
-  // شرط فوز المواطنين: القضاء على كل المافيا
   if (mafiaCount === 0) return "citizen";
+  // قانون تسريع اللعب: فوز المافيا إذا كان المواطنون ضعف المافيا أو أقل
+  if (citizenCount <= mafiaCount * 2) return "mafia";
 
-  // شرط فوز المافيا: عددهم يساوي أو يفوق المواطنين
-  if (mafiaCount >= citizenCount) return "mafia";
-
-  // اللعبة مستمرة
   return null;
 };
 
 /**
- * تجهيز طابور الليل (Night Queue)
- * تعيد قائمة اللاعبين الأحياء بترتيب عشوائي للتمرير
- * + الموتى (ليقوموا بالتمويه)
+ * تجهيز طابور الليل (الأحياء فقط) - تم طرد الأموات
  */
 export const createNightQueue = (players) => {
-    return shuffleArray([...players]);
+    const alivePlayers = players.filter(p => p.isAlive);
+    return shuffleArray([...alivePlayers]);
 };
 
 // ==========================================
-// Game Resolvers (دوال حسم النتائج الجديدة)
+// Game Resolvers (حسم النتائج)
 // ==========================================
 
-/**
- * معالجة أحداث الليل بناءً على اختيارات المافيا والطبيب
- */
 export const resolveNight = (players, nightActions) => {
   let killedPlayer = null;
-  let savedByDoctor = false; // تتبع حالة الإنقاذ الناجح
+  let savedByDoctor = false;
+  let vigilanteSuicide = false;
+
+  // التحقق مما إذا كان الطبيب حياً بالأصل ليعالج
+  const doctor = players.find(p => p.role === ROLES.DOCTOR && p.isAlive);
+  const actualDoctorTarget = doctor ? nightActions.doctorTargetId : null;
 
   const updatedPlayers = players.map(player => {
     const newPlayer = { ...player };
 
-    // 1. تحديث حالة الطبيب إذا اختار علاج نفسه هذه الليلة
-    if (newPlayer.role === ROLES.DOCTOR && newPlayer.id === nightActions.doctorTargetId) {
+    // تحديث الوصية للجميع
+    if (nightActions.wills && nightActions.wills[newPlayer.id] !== undefined) {
+      newPlayer.deathWillTargetId = nightActions.wills[newPlayer.id];
+    }
+
+    // علاج الطبيب لنفسه
+    if (newPlayer.role === ROLES.DOCTOR && newPlayer.id === actualDoctorTarget) {
       newPlayer.hasSelfHealed = true;
     }
 
-    // 2. التحقق من هدف المافيا ومقارنته بحماية الطبيب
+    // القتل من المافيا
     if (newPlayer.id === nightActions.mafiaTargetId) {
-      if (newPlayer.id !== nightActions.doctorTargetId) {
-        // الطبيب لم يحمه، إذن يموت
+      if (newPlayer.id !== actualDoctorTarget) {
         newPlayer.isAlive = false;
         killedPlayer = newPlayer;
       } else {
-        // المافيا اختارته والطبيب حماه في اللحظة الأخيرة
         savedByDoctor = true;
       }
     }
 
-    // تصفير حالة اللعب في الليل لليوم التالي
-    newPlayer.hasActedTonight = false; 
+    // رصاصة القناص (الطور المطور)
+    if (nightActions.vigilanteTargetId && newPlayer.id === nightActions.vigilanteTargetId) {
+      if (newPlayer.isAlive) {
+        newPlayer.isAlive = false; // القناص يقتل فوراً دون حماية طبيب
+        // إذا قتل بريئاً، يموت القناص منتحراً
+        if (newPlayer.role !== ROLES.MAFIA) {
+          vigilanteSuicide = true;
+        }
+      }
+    }
 
     return newPlayer;
   });
 
-  return { updatedPlayers, killedPlayer, savedByDoctor };
+  // تنفيذ انتحار القناص إذا أخطأ
+  if (vigilanteSuicide) {
+    const vigIndex = updatedPlayers.findIndex(p => p.role === ROLES.VIGILANTE);
+    if (vigIndex !== -1) updatedPlayers[vigIndex].isAlive = false;
+  }
+
+  // استخراج الوصية إذا مات شخص
+  let deathWillMessage = null;
+  if (killedPlayer && killedPlayer.deathWillTargetId !== null) {
+    const accused = updatedPlayers.find(p => p.id === killedPlayer.deathWillTargetId);
+    if (accused) {
+      deathWillMessage = NARRATOR.getWillMessage(killedPlayer.name, accused.name);
+    }
+  }
+
+  return { updatedPlayers, killedPlayer, savedByDoctor, deathWillMessage };
 };
 
-/**
- * معالجة نتائج التصويت (تحديد المتهم فقط دون إعدامه ليتمكن من الدفاع عن نفسه)
- */
 export const resolveVoting = (players, votes) => {
-  // إذا لم يصوت أحد
-  if (Object.keys(votes).length === 0) {
-    return { accusedPlayer: null, isTie: false };
-  }
+  if (Object.keys(votes).length === 0) return { accusedPlayer: null, isTie: false };
 
   let maxVotes = 0;
   let targetsWithMaxVotes = [];
 
-  // حساب أعلى الأصوات
   for (const [targetId, count] of Object.entries(votes)) {
     if (count > maxVotes) {
       maxVotes = count;
@@ -201,30 +222,38 @@ export const resolveVoting = (players, votes) => {
     }
   }
 
-  // إذا تعادل شخصان أو أكثر بأعلى الأصوات، لا يوجد متهم واضح
-  if (targetsWithMaxVotes.length > 1) {
-    return { accusedPlayer: null, isTie: true };
-  }
+  if (targetsWithMaxVotes.length > 1) return { accusedPlayer: null, isTie: true };
 
-  // تحديد المتهم الأول
   const accusedId = targetsWithMaxVotes[0];
   const accusedPlayer = players.find(p => p.id === accusedId);
 
   return { accusedPlayer, isTie: false };
 };
 
-/**
- * تنفيذ الإعدام الفعلي (بعد استنفاد وقت منصة الدفاع)
- */
 export const executePlayer = (players, playerId) => {
   let executedPlayer = null;
+  let jesterWon = false;
+
   const updatedPlayers = players.map(player => {
     if (player.id === playerId) {
       executedPlayer = { ...player, isAlive: false };
+      // إذا كان المعدوم هو المجنون، يفوز هو فوراً
+      if (executedPlayer.role === ROLES.JESTER) {
+        jesterWon = true;
+      }
       return executedPlayer;
     }
     return player;
   });
 
-  return { updatedPlayers, executedPlayer };
+  // استخراج الوصية
+  let deathWillMessage = null;
+  if (executedPlayer && executedPlayer.deathWillTargetId !== null) {
+    const accused = updatedPlayers.find(p => p.id === executedPlayer.deathWillTargetId);
+    if (accused) {
+      deathWillMessage = NARRATOR.getWillMessage(executedPlayer.name, accused.name);
+    }
+  }
+
+  return { updatedPlayers, executedPlayer, jesterWon, deathWillMessage };
 };
