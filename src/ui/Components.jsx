@@ -10,46 +10,46 @@ import {
 } from './SVGGraphics';
 
 // ==========================================
-// 1. بيانات الأدوار (النصوص البوليسية والأيقونات)
+// 1. بيانات الأدوار (الأسماء الكلاسيكية الأصلية)
 // ==========================================
 export const getRoleMeta = (role) => {
   const meta = {
     [ROLES.MAFIA]: { 
-      title: 'العصابة', 
+      title: 'المافيا', 
       Icon: MafiaIcon, 
-      desc: 'أنت المطلوب الأول للعدالة.. قم بتصفية أهدافك دون ترك أي أثر.' 
+      desc: 'أنت فرد من المافيا.. تعاون مع فريقك لتصفية المدينة.' 
     },
     [ROLES.DOCTOR]: { 
-      title: 'طبيب الطوارئ', 
+      title: 'الطبيب', 
       Icon: DoctorIcon, 
-      desc: 'مسعف المدينة.. اختر شخصاً لإنقاذه من الاغتيال الليلة.' 
+      desc: 'أنت طبيب المدينة.. اختر شخصاً لإنقاذه من القتل الليلة.' 
     },
     [ROLES.DETECTIVE]: { 
-      title: 'المحقق السري', 
+      title: 'المحقق', 
       Icon: DetectiveIcon, 
-      desc: 'ابحث في السجلات الجنائية.. افحص هوية شخص تشك بخيانته.' 
+      desc: 'أنت المحقق.. اختر شخصاً للتحقيق في هويته.' 
     },
     [ROLES.CITIZEN]: { 
-      title: 'مواطن مدني', 
+      title: 'مواطن', 
       Icon: CitizenIcon, 
-      desc: 'أنت بريء.. راقب، حلل الأدلة، وساعد في كشف المجرمين.' 
+      desc: 'أنت مواطن بريء.. راقب، وحلل، وصوت لطرد المافيا.' 
     },
     [ROLES.JESTER]: { 
       title: 'المختل', 
       Icon: JesterIcon, 
-      desc: 'الجميع يبحث عن كبش فداء.. تلاعب بالأدلة ليتم إعدامك غداً وتنتصر!' 
+      desc: 'أنت تبحث عن الموت.. تلاعب بالجميع ليقوموا بإعدامك غداً وتنتصر!' 
     },
     [ROLES.VIGILANTE]: { 
-      title: 'القناص المارق', 
+      title: 'القناص', 
       Icon: VigilanteIcon, 
-      desc: 'العدالة بيدك.. تملك رصاصة واحدة، إياك أن تقتل بها بريئاً وإلا ستنتحر ندماً.' 
+      desc: 'تملك رصاصة واحدة.. إياك أن تقتل بها بريئاً وإلا ستنتحر ندماً.' 
     }
   };
   return meta[role] || meta[ROLES.CITIZEN];
 };
 
 // ==========================================
-// 2. بطاقة الدور (Role Card)
+// 2. بطاقة الدور
 // ==========================================
 export const RoleCard = ({ role }) => {
   const { title, Icon, desc } = getRoleMeta(role);
@@ -59,43 +59,41 @@ export const RoleCard = ({ role }) => {
       <div style={{ marginBottom: '20px' }}>
         <Icon size={90} />
       </div>
-      <h1 style={{ fontSize: '2.2rem', marginBottom: '10px' }}>{title}</h1>
+      <h1 style={{ fontSize: '2.2rem', marginBottom: '10px', color: 'var(--primary-gold)' }}>{title}</h1>
       <p style={{ fontSize: '1.2rem', color: 'var(--text-main)' }}>{desc}</p>
     </div>
   );
 };
 
 // ==========================================
-// 3. أزرار اختيار اللاعبين
+// 3. أزرار اللاعبين (بتحديد سري وخفي)
 // ==========================================
-export const PlayerButton = ({ player, onClick, selected, disabled, isDanger = false }) => {
-  let btnClass = "btn ";
-  
-  if (selected) {
-    btnClass += isDanger ? "btn-danger" : "btn-primary";
-  } else {
-    btnClass += "btn-secondary";
-  }
-  
+export const PlayerButton = ({ player, onClick, selected, disabled }) => {
   return (
     <button 
-      className={btnClass} 
+      className="btn btn-secondary" 
       onClick={() => onClick(player.id)}
       disabled={disabled}
       style={{ 
-        opacity: disabled && !selected ? 0.3 : 1,
-        transform: selected ? 'scale(1.02)' : 'scale(1)',
-        transition: 'all 0.2s ease-in-out',
-        margin: '5px'
+        opacity: disabled && !selected ? 0.4 : 1,
+        // تغييرات طفيفة جداً للسرية بدلاً من الألوان الفاقعة
+        borderColor: selected ? 'var(--primary-gold)' : 'var(--text-dim)',
+        color: selected ? 'var(--primary-gold)' : 'var(--text-main)',
+        boxShadow: selected ? 'inset 0 0 10px rgba(197, 160, 89, 0.1)' : 'none',
+        margin: '5px',
+        position: 'relative',
+        outline: 'none' // إزالة أثر المتصفح (Focus)
       }}
     >
       {player.name}
+      {/* علامة صح صغيرة جداً وسرية */}
+      {selected && <span style={{ position: 'absolute', left: '10px', fontSize: '0.9rem' }}>✔️</span>}
     </button>
   );
 };
 
 // ==========================================
-// 4. العداد الزمني (Countdown Timer) - جديد
+// 4. العداد الزمني (Countdown Timer)
 // ==========================================
 export const CountdownTimer = ({ initialSeconds, onExpire }) => {
   const [seconds, setSeconds] = useState(initialSeconds);
@@ -133,34 +131,34 @@ export const CountdownTimer = ({ initialSeconds, onExpire }) => {
 };
 
 // ==========================================
-// 5. نافذة التعليمات (دليل اللعبة البوليسي) - جديد
+// 5. نافذة التعليمات (دليل اللعبة الكلاسيكي)
 // ==========================================
 export const RulesModal = ({ onClose }) => (
   <div className="fade-in" style={{
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 100,
+    backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 100,
     display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px'
   }}>
     <div className="card scroll-container" style={{ maxHeight: '85vh', overflowY: 'auto', border: '1px solid var(--primary-gold)' }}>
-      <h2 style={{ color: 'var(--primary-gold)', borderBottom: '1px solid #333', paddingBottom: '10px' }}>ملف التعليمات الجنائية</h2>
+      <h2 style={{ color: 'var(--primary-gold)', borderBottom: '1px solid #333', paddingBottom: '10px' }}>دليل لعبة المافيا</h2>
 
-      <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>أطوار التحقيق:</h3>
+      <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>الأطوار:</h3>
       <p style={{ color: 'var(--text-dim)', textAlign: 'right', marginBottom: '10px' }}>
-        - <strong style={{color: '#fff'}}>الكلاسيكي:</strong> تحقيق مباشر يشمل (العصابة، طبيب الطوارئ، المحقق، والمواطنين). القوانين صارمة وسريعة.
+        - <strong style={{color: '#fff'}}>المافيا الكلاسيكي:</strong> الأدوار الأساسية (المافيا، الطبيب، المحقق، والمواطن).
       </p>
       <p style={{ color: 'var(--text-dim)', textAlign: 'right' }}>
-        - <strong style={{color: '#fff'}}>المطور:</strong> يضيف شخصيات معقدة (المختل، والقناص). ويُجبر جميع اللاعبين على ترك "وصية جنائية" كل ليلة لاشتباههم بشخص معين في حال تم اغتيالهم.
+        - <strong style={{color: '#fff'}}>المافيا المطور:</strong> يضيف شخصيات (المختل، والقناص). ونظام الوصية الإجبارية التي تُفتح إذا مات اللاعب.
       </p>
 
-      <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>سير الجلسة:</h3>
+      <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>كيفية اللعب:</h3>
       <ul style={{ color: 'var(--text-dim)', textAlign: 'right', paddingRight: '20px', lineHeight: '1.8' }}>
-        <li><strong>اليوم الأول:</strong> دقيقة واحدة للتعارف وتبادل الشكوك الأولية قبل حلول الظلام الأول.</li>
-        <li><strong>الليل:</strong> يتم تمرير ملف القضية (الجهاز) بسرية. ترتيب استيقاظ اللاعبين يُخلط عشوائياً كل ليلة لمنع التخمين.</li>
-        <li><strong>الصباح والنقاش:</strong> الإعلان عن مسرح الجريمة، يليه مؤقت زمني صارم لتبادل الاتهامات.</li>
-        <li><strong>المحكمة:</strong> يصوت الأحياء على إعدام المشتبه به الأكبر لإنهاء الجلسة.</li>
+        <li><strong>الأدوار:</strong> سيقوم كل لاعب بتمرير الجهاز لمعرفة دوره بسرية تامة.</li>
+        <li><strong>الليل:</strong> سيقوم مدير الجلسة (اللعبة) بالنداء على اللاعبين عشوائياً ليقوموا بأفعالهم.</li>
+        <li><strong>الصباح:</strong> الإعلان عن الضحية، يليه مؤقت زمني صارم لتبادل الاتهامات.</li>
+        <li><strong>المحكمة:</strong> اللعبة ستنادي على اللاعبين واحداً تلو الآخر للتصويت سراً على إعدام المشتبه به.</li>
       </ul>
 
-      <button className="btn btn-primary" onClick={onClose} style={{ marginTop: '30px' }}>إغلاق الملف</button>
+      <button className="btn btn-primary" onClick={onClose} style={{ marginTop: '30px' }}>إغلاق التعليمات</button>
     </div>
   </div>
 );
