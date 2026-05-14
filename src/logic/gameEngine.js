@@ -1,5 +1,5 @@
 // ==========================================
-// Constants & Types (الثوابت)
+// الثوابت والمراحل (Constants & Phases)
 // ==========================================
 
 export const MODES = {
@@ -16,56 +16,59 @@ export const ROLES = {
   VIGILANTE: "vigilante", 
 };
 
-// تم إضافة مرحلة اليوم الأول والنقاش
+// تم إضافة مراحل كشف الأدوار والتوجيه الجماعي
 export const PHASES = {
   SETUP: "setup",             
-  FIRST_DAY_INTRO: "first_day_intro", // المرحلة التمهيدية الجديدة
+  ROLE_REVEAL: "role_reveal", // مرحلة تمرير الجهاز لمعرفة الأدوار
+  FIRST_DAY_INTRO: "first_day_intro", 
+  GROUP_SLEEP: "group_sleep", // شاشة توجيهية: "المدينة تنام"
   NIGHT_TRANSITION: "night_transition", 
   NIGHT_TURN: "night_turn",   
+  GROUP_WAKE: "group_wake",   // شاشة توجيهية: "المدينة تستيقظ"
   DAY_RESULT: "day_result",   
-  DISCUSSION: "discussion",   // مرحلة النقاش مع المؤقت
+  DISCUSSION: "discussion",   
   VOTING: "voting",           
   EXECUTION: "execution",     
   GAME_OVER: "game_over",     
 };
 
 // ==========================================
-// السرد البوليسي (Noir Detective Narrator)
+// سرد مدير الجلسة (Classic Storyteller NARRATOR)
 // ==========================================
 export const NARRATOR = {
   getKillMessage: (name) => {
     const msgs = [
-      `تقرير الطب الشرعي: تم العثور على [ ${name} ] مقتولاً. الجريمة تحمل بصمات المافيا.`,
-      `سجل الحوادث: رصاصة غادرة أنهت حياة [ ${name} ] في جنح الظلام. الملف لا يزال مفتوحاً.`,
-      `شرطة المدينة: فاجعة أمنية.. تمت تصفية [ ${name} ] بدم بارد الليلة الماضية.`
+      `استيقظت المدينة على فاجعة.. لقد قامت المافيا بتصفية [ ${name} ] بدم بارد الليلة الماضية.`,
+      `كانت ليلة مرعبة.. عُثر على [ ${name} ] مقتولاً، ويبدو أن المافيا لا ترحم أحداً.`,
+      `الظلام كان ستاراً لجريمة مروعة.. [ ${name} ] لن يستيقظ معنا هذا الصباح.`
     ];
     return msgs[Math.floor(Math.random() * msgs.length)];
   },
   getSaveMessage: () => {
     const msgs = [
-      `بلاغ أمني: محاولة اغتيال فاشلة. تدخل طبيب الطوارئ في اللحظة المناسبة وأنقذ الضحية.`,
-      `تقرير المستشفى: ليلة دموية كادت أن تقع، لكن العناية الطبية حالت دون تسجيل أي وفيات.`
+      `حاولت المافيا القتل الليلة، ولكن بفضل براعة طبيب المدينة، تم إنقاذ الضحية في اللحظة الأخيرة!`,
+      `سمعنا أصواتاً مريبة الليلة الماضية.. ولكن طبيبنا كان متيقظاً وعالج المصاب. لم يمت أحد.`
     ];
     return msgs[Math.floor(Math.random() * msgs.length)];
   },
   getExecutionMessage: (name) => {
     const msgs = [
-      `حكم قضائي: بعد مداولات المحكمة، تم تنفيذ حكم الإعدام بحق [ ${name} ]. القضية أُغلقت.`,
-      `مذكرة إعدام: بناءً على تصويت المدينة، تم إقصاء [ ${name} ] من صفوفنا.`
+      `قررت المدينة التخلص من [ ${name} ] عبر التصويت.. تم الإعدام.`,
+      `بعد نقاش حاد ومحكمة صارمة، تم سحب [ ${name} ] إلى حبل المشنقة.`
     ];
     return msgs[Math.floor(Math.random() * msgs.length)];
   },
   getWillMessage: (deadName, targetName) => {
     const msgs = [
-      `دليل جنائي: تم العثور على وصية من الضحية ${deadName} توجه الاتهام رسمياً نحو المشتبه به: [ ${targetName} ].`,
-      `شهادة ما قبل الموت: ترك ${deadName} رسالة أخيرة يطالب فيها بالتحقيق مع: [ ${targetName} ].`
+      `قبل أن يلفظ أنفاسه الأخيرة، ترك ${deadName} وصية يتهم فيها: [ ${targetName} ].`,
+      `وجدنا رسالة ملوثة بالدماء في جيب ${deadName}، يطالب فيها بالانتقام من: [ ${targetName} ].`
     ];
     return msgs[Math.floor(Math.random() * msgs.length)];
   }
 };
 
 // ==========================================
-// Helper Functions (دوال مساعدة)
+// دوال مساعدة (Helper Functions)
 // ==========================================
 export const shuffleArray = (array) => {
   let currentIndex = array.length, randomIndex;
@@ -78,7 +81,7 @@ export const shuffleArray = (array) => {
 };
 
 // ==========================================
-// Core Logic (المنطق الأساسي)
+// المنطق الأساسي (Core Logic)
 // ==========================================
 
 export const distributeRoles = (playerNames, mode) => {
@@ -120,17 +123,13 @@ export const checkWinCondition = (players) => {
   return null;
 };
 
-/**
- * الخلط العشوائي الحقيقي لترتيب الليل
- */
 export const createNightQueue = (players) => {
     const alivePlayers = players.filter(p => p.isAlive);
-    // الخلط يتم في كل ليلة مجدداً لضمان عدم ثبات الترتيب
-    return shuffleArray([...alivePlayers]);
+    return shuffleArray([...alivePlayers]); // خلط عشوائي في كل ليلة
 };
 
 // ==========================================
-// Game Resolvers (حسم النتائج)
+// حسم النتائج (Game Resolvers)
 // ==========================================
 
 export const resolveNight = (players, nightActions) => {
