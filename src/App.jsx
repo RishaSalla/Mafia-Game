@@ -14,7 +14,10 @@ import {
   GatewayScreen, 
   MainMenuScreen, 
   SetupScreen, 
+  RoleRevealScreen,
   FirstDayIntroScreen,
+  GroupSleepScreen,
+  GroupWakeScreen,
   NightTransitionScreen, 
   NightTurnScreen, 
   DayResultScreen, 
@@ -43,22 +46,19 @@ export default function App() {
   const [winner, setWinner] = useState(null);
   const [jesterWon, setJesterWon] = useState(false);
 
-  // 1. التحقق من الكود
   const handleVerify = async (code) => {
     const isValid = await verifyAccessCode(code);
     if (isValid) setIsAuthenticated(true);
     return isValid;
   };
 
-  // 2. بدء اللعبة وتوزيع الأدوار
   const startGame = () => {
     const initializedPlayers = distributeRoles(players, mode);
     setPlayers(initializedPlayers);
-    // التوجيه إلى مرحلة التمهيد والنقاش الأول بدلاً من الليل المباشر
-    setPhase(PHASES.FIRST_DAY_INTRO); 
+    // التوجيه إلى مرحلة كشف الأدوار السرية أولاً
+    setPhase(PHASES.ROLE_REVEAL); 
   };
 
-  // 3. بدء دورة الليل (الترتيب أصبح عشوائياً في كل ليلة)
   const startNight = (currentPlayers) => {
     const queue = createNightQueue(currentPlayers);
     setNightQueue(queue);
@@ -67,7 +67,6 @@ export default function App() {
     setPhase(PHASES.NIGHT_TRANSITION);
   };
 
-  // 4. معالجة أوامر الليل
   const handleNightActionComplete = (actions) => {
     const currentPlayer = nightQueue[currentNightIndex];
     const newActions = { ...nightActions };
@@ -94,12 +93,12 @@ export default function App() {
         setWinner(win);
         setPhase(PHASES.GAME_OVER);
       } else {
-        setPhase(PHASES.DAY_RESULT);
+        // بعد انتهاء الليل، نذهب لشاشة الاستيقاظ الجماعي بدلاً من التقرير المباشر
+        setPhase(PHASES.GROUP_WAKE);
       }
     }
   };
 
-  // 5. معالجة التصويت في المحكمة
   const handleVoteComplete = (votes) => {
     const result = resolveVoting(players, votes);
     if (result.accusedPlayer) {
@@ -136,21 +135,24 @@ export default function App() {
     setJesterWon(false);
   };
 
-  // ==========================================
-  // توجيه الشاشات (Router Logic)
-  // ==========================================
   if (!isAuthenticated) return <GatewayScreen onVerify={handleVerify} />;
   if (!mode) return <MainMenuScreen onSelectMode={setMode} />;
 
   switch (phase) {
     case PHASES.SETUP:
       return <SetupScreen players={players} setPlayers={setPlayers} startGame={startGame} mode={mode} />;
+    case PHASES.ROLE_REVEAL:
+      return <RoleRevealScreen players={players} onComplete={() => setPhase(PHASES.FIRST_DAY_INTRO)} />;
     case PHASES.FIRST_DAY_INTRO:
-      return <FirstDayIntroScreen onContinue={() => startNight(players)} />;
+      return <FirstDayIntroScreen onContinue={() => setPhase(PHASES.GROUP_SLEEP)} />;
+    case PHASES.GROUP_SLEEP:
+      return <GroupSleepScreen onContinue={() => startNight(players)} />;
     case PHASES.NIGHT_TRANSITION:
       return <NightTransitionScreen targetPlayer={nightQueue[currentNightIndex]} onReady={() => setPhase(PHASES.NIGHT_TURN)} />;
     case PHASES.NIGHT_TURN:
       return <NightTurnScreen player={nightQueue[currentNightIndex]} players={players} mode={mode} onActionComplete={handleNightActionComplete} />;
+    case PHASES.GROUP_WAKE:
+      return <GroupWakeScreen onContinue={() => setPhase(PHASES.DAY_RESULT)} />;
     case PHASES.DAY_RESULT:
       return <DayResultScreen killedPlayer={killedPlayer} savedByDoctor={savedByDoctor} deathWillMessage={deathWillMessage} onContinue={() => setPhase(PHASES.DISCUSSION)} />;
     case PHASES.DISCUSSION:
@@ -158,10 +160,10 @@ export default function App() {
     case PHASES.VOTING:
       return <VotingScreen alivePlayers={players.filter(p => p.isAlive)} onVoteComplete={handleVoteComplete} />;
     case PHASES.EXECUTION:
-      return <ExecutionScreen executedPlayer={executedPlayer} deathWillMessage={deathWillMessage} onContinue={() => startNight(players)} />;
+      return <ExecutionScreen executedPlayer={executedPlayer} deathWillMessage={deathWillMessage} onContinue={() => setPhase(PHASES.GROUP_SLEEP)} />;
     case PHASES.GAME_OVER:
       return <GameOverScreen winner={winner} jesterWon={jesterWon} players={players} onRestart={handleRestart} />;
     default:
-      return <div className="center-content"><h2 style={{ color: "var(--primary-gold)" }}>جاري تحميل ملفات القضية...</h2></div>;
+      return <div className="center-content"><h2 style={{ color: "var(--primary-gold)" }}>جاري التحميل...</h2></div>;
   }
 }
