@@ -1,235 +1,149 @@
-/* ==========================================
-   المتغيرات والألوان الكلاسيكية (Noir Theme)
-   ========================================== */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap');
+
 :root {
-  --bg-dark: #050505;
-  --card-bg: #111111;
-  --primary-gold: #c5a059;
-  --crimson-red: #8b0000;
+  --bg-color: #0d0d0d;
+  --bg-gradient: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
+  --primary-gold: #D4AF37;
+  --gold-gradient: linear-gradient(135deg, #F0E68C, #D4AF37, #AA8C2C);
+  --crimson-red: #8B0000;
   --bright-red: #ff3333;
-  --text-main: #e0e0e0;
-  --text-dim: #777777;
+  --text-main: #EAEAEA;
+  --text-dim: #A0A0A0;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent; /* يمنع وميض الضغط في الجوال */
+}
+
+/* القضاء النهائي على أثر الـ Focus في جميع المتصفحات */
+button:focus, input:focus, select:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 body {
-  background-color: var(--bg-dark);
+  font-family: 'Tajawal', sans-serif;
+  background: var(--bg-gradient);
+  background-attachment: fixed;
   color: var(--text-main);
-  /* خطوط كلاسيكية تشبه الآلة الكاتبة وتقارير الشرطة */
-  font-family: 'Courier New', Courier, monospace, system-ui, -apple-system;
-  text-align: center;
   direction: rtl;
-  overflow-x: hidden;
   min-height: 100vh;
-  user-select: none; /* منع تحديد النصوص */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
-h1, h2, h3 {
-  font-family: 'Georgia', serif;
-  font-weight: bold;
-  margin-bottom: 15px;
+.center-content {
+  width: 100%;
+  max-width: 500px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  text-align: center;
+  position: relative;
+}
+
+h1 {
+  font-weight: 800;
   letter-spacing: 1px;
 }
 
-/* ==========================================
-   الهيكل العام (Layout)
-   ========================================== */
-.center-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
-  position: relative;
-  max-width: 600px;
-  margin: 0 auto;
+h2, h3 {
+  font-weight: 700;
 }
 
 .card {
-  background-color: var(--card-bg);
-  border: 1px solid #333;
+  background: rgba(20, 20, 20, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 12px;
   padding: 25px;
   width: 100%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
-  position: relative;
-  /* إزالة الحواف الناعمة لزيادة حدة وصرامة التصميم */
-  border-radius: 0; 
-}
-
-/* ==========================================
-   الأزرار والمدخلات (Buttons & Inputs)
-   ========================================== */
-.btn {
-  padding: 14px 20px;
-  font-size: 1.1rem;
-  font-family: inherit;
-  font-weight: bold;
-  cursor: pointer;
-  border: none;
-  width: 100%;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.3s ease;
-  border-radius: 0;
-}
-
-.btn-primary {
-  background-color: var(--primary-gold);
-  color: #000;
-  border: 1px solid var(--primary-gold);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: transparent;
-  color: var(--primary-gold);
-  box-shadow: inset 0 0 15px rgba(197, 160, 89, 0.2);
-}
-
-.btn-danger {
-  background-color: var(--crimson-red);
-  color: #fff;
-  border: 1px solid var(--crimson-red);
-}
-
-.btn-danger:hover:not(:disabled) {
-  background-color: transparent;
-  color: var(--crimson-red);
-  box-shadow: inset 0 0 15px rgba(139, 0, 0, 0.5);
-}
-
-.btn-secondary {
-  background-color: transparent;
-  color: var(--text-main);
-  border: 1px solid var(--text-dim);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  border-color: var(--primary-gold);
-  color: var(--primary-gold);
-}
-
-.btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  filter: grayscale(100%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
 }
 
 .input-field {
   width: 100%;
-  padding: 14px;
-  background-color: #000;
-  border: 1px solid #444;
+  padding: 12px;
+  margin-top: 10px;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
   color: var(--primary-gold);
+  border-radius: 6px;
+  text-align: center;
+  font-family: 'Tajawal', sans-serif;
   font-size: 1.1rem;
-  font-family: inherit;
-  outline: none;
-  margin-bottom: 10px;
   transition: border-color 0.3s;
-  border-radius: 0;
 }
 
 .input-field:focus {
   border-color: var(--primary-gold);
 }
 
-/* ==========================================
-   المؤثرات البصرية (Animations & Effects)
-   ========================================== */
-
-/* 1. الظهور التدريجي */
-.fade-in {
-  animation: fadeIn 0.8s ease-in-out forwards;
+.btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--gold-gradient);
+  color: #000;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--primary-gold);
+  border: 1px solid var(--primary-gold);
+}
+
+.btn-danger {
+  background-color: transparent;
+  color: var(--bright-red);
+  border: 1px solid var(--crimson-red);
+}
+
+.fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* 2. تأثير تشويش النص (Glitch) لشاشات القتل والفوز */
-.glitch-text {
-  position: relative;
-  animation: glitch 3s infinite;
-}
-@keyframes glitch {
-  0% { text-shadow: 2px 0 var(--crimson-red), -2px 0 #000; }
-  20% { text-shadow: -2px 0 var(--crimson-red), 2px 0 #000; }
-  21% { text-shadow: 0 0 0; }
-  90% { text-shadow: 0 0 0; }
-  95% { text-shadow: 2px 0 var(--crimson-red), -2px 0 #000; }
-  100% { text-shadow: 2px 0 var(--crimson-red), -2px 0 #000; }
-}
-
-/* 3. تأثير الدخان في الخلفية */
-.smoke-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-.smoke-layer {
-  position: absolute;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 60%);
-  animation: drift 25s infinite linear;
-}
-.smoke-1 { top: -50%; left: -50%; animation-duration: 30s; }
-.smoke-2 { top: -20%; left: -30%; animation-duration: 40s; animation-direction: reverse; }
-
-@keyframes drift {
-  0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-  50% { transform: translate(3%, 3%) rotate(3deg) scale(1.05); }
-  100% { transform: translate(0, 0) rotate(0deg) scale(1); }
-}
-
-/* 4. تأرجح المشنقة */
-.swing-animation {
-  transform-origin: top center;
-  animation: swing 4s ease-in-out infinite alternate;
-}
-@keyframes swing {
-  0% { transform: rotate(4deg); }
-  100% { transform: rotate(-4deg); }
-}
-
-/* 5. توهج الدم في شاشة الإعدام */
 .blood-glow {
-  box-shadow: inset 0 0 40px rgba(139, 0, 0, 0.1);
-  animation: pulseGlow 3s infinite alternate;
-}
-@keyframes pulseGlow {
-  from { box-shadow: inset 0 0 20px rgba(139, 0, 0, 0.1); }
-  to { box-shadow: inset 0 0 80px rgba(139, 0, 0, 0.4); }
+  box-shadow: inset 0 0 50px rgba(139, 0, 0, 0.5);
 }
 
-/* 6. تقطير الدم (SVG) */
-.blood-drip {
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  animation: drip 2.5s ease-in forwards;
-  animation-delay: 0.5s;
-}
-@keyframes drip {
-  to { stroke-dashoffset: 0; }
-}
-
-/* 7. شريط التمرير الكلاسيكي */
 .scroll-container::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 .scroll-container::-webkit-scrollbar-track {
-  background: var(--bg-dark);
+  background: #111; 
 }
 .scroll-container::-webkit-scrollbar-thumb {
-  background: var(--text-dim);
+  background: var(--primary-gold); 
+  border-radius: 10px;
 }
