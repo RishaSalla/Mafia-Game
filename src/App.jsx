@@ -20,7 +20,7 @@ import {
   GroupWakeScreen,
   NightTransitionScreen, 
   NightTurnScreen, 
-  DayResultScreen, 
+  MorningSequenceScreen, 
   DiscussionScreen,
   VotingScreen, 
   ExecutionScreen, 
@@ -38,11 +38,15 @@ export default function App() {
   const [currentNightIndex, setCurrentNightIndex] = useState(0);
   const [nightActions, setNightActions] = useState({ wills: {} });
   
-  const [killedPlayer, setKilledPlayer] = useState(null);
+  // سجل أحداث الصباح
+  const [mafiaKill, setMafiaKill] = useState(null);
+  const [vigilanteKill, setVigilanteKill] = useState(null);
+  const [vigilanteSuicide, setVigilanteSuicide] = useState(false);
   const [savedByDoctor, setSavedByDoctor] = useState(false);
-  const [executedPlayer, setExecutedPlayer] = useState(null);
   const [deathWillMessage, setDeathWillMessage] = useState(null);
   
+  // المحكمة والنهاية
+  const [executedPlayer, setExecutedPlayer] = useState(null);
   const [winner, setWinner] = useState(null);
   const [jesterWon, setJesterWon] = useState(false);
 
@@ -55,7 +59,6 @@ export default function App() {
   const startGame = () => {
     const initializedPlayers = distributeRoles(players, mode);
     setPlayers(initializedPlayers);
-    // التوجيه إلى مرحلة كشف الأدوار السرية أولاً
     setPhase(PHASES.ROLE_REVEAL); 
   };
 
@@ -71,9 +74,9 @@ export default function App() {
     const currentPlayer = nightQueue[currentNightIndex];
     const newActions = { ...nightActions };
     
-    if (currentPlayer.role === 'mafia' && actions.targetId) newActions.mafiaTargetId = actions.targetId;
-    if (currentPlayer.role === 'doctor' && actions.targetId) newActions.doctorTargetId = actions.targetId;
-    if (currentPlayer.role === 'vigilante' && actions.targetId) newActions.vigilanteTargetId = actions.targetId;
+    if (currentPlayer.role === ROLES.MAFIA && actions.targetId) newActions.mafiaTargetId = actions.targetId;
+    if (currentPlayer.role === ROLES.DOCTOR && actions.targetId) newActions.doctorTargetId = actions.targetId;
+    if (currentPlayer.role === ROLES.VIGILANTE && actions.targetId) newActions.vigilanteTargetId = actions.targetId;
     if (actions.willTargetId) newActions.wills[currentPlayer.id] = actions.willTargetId;
 
     setNightActions(newActions);
@@ -84,16 +87,24 @@ export default function App() {
     } else {
       const result = resolveNight(players, newActions);
       setPlayers(result.updatedPlayers);
-      setKilledPlayer(result.killedPlayer);
+      setMafiaKill(result.mafiaKill);
+      setVigilanteKill(result.vigilanteKill);
+      setVigilanteSuicide(result.vigilanteSuicide);
       setSavedByDoctor(result.savedByDoctor);
-      setDeathWillMessage(result.deathWillMessage);
+
+      // استخراج نص الوصية إن وجدت
+      let willMsg = null;
+      if (result.mafiaKill && result.mafiaKill.deathWillTargetId !== null) {
+        const target = result.updatedPlayers.find(p => p.id === result.mafiaKill.deathWillTargetId);
+        if (target) willMsg = `أنا أشك في: [ ${target.name} ]`;
+      }
+      setDeathWillMessage(willMsg);
       
       const win = checkWinCondition(result.updatedPlayers);
       if (win) {
         setWinner(win);
         setPhase(PHASES.GAME_OVER);
       } else {
-        // بعد انتهاء الليل، نذهب لشاشة الاستيقاظ الجماعي بدلاً من التقرير المباشر
         setPhase(PHASES.GROUP_WAKE);
       }
     }
@@ -106,7 +117,6 @@ export default function App() {
       setPlayers(execResult.updatedPlayers);
       setExecutedPlayer(execResult.executedPlayer);
       setJesterWon(execResult.jesterWon);
-      setDeathWillMessage(execResult.deathWillMessage);
       
       if (execResult.jesterWon) {
          setPhase(PHASES.GAME_OVER);
@@ -122,17 +132,36 @@ export default function App() {
       }
     } else {
       setExecutedPlayer(null);
-      setDeathWillMessage(null);
       setPhase(PHASES.EXECUTION);
     }
   };
 
+  // إنهاء الجلسة بالكامل
   const handleRestart = () => {
     setMode(null);
     setPhase(PHASES.SETUP);
     setPlayers([]);
     setWinner(null);
     setJesterWon(false);
+  };
+
+  // لعب جديد بنفس الأسماء
+  const handlePlayAgain = () => {
+    const playerNames = players.map(p => p.name);
+    const newPlayers = distributeRoles(playerNames, mode);
+    setPlayers(newPlayers);
+    
+    // تصفير سجلات اللعبة السابقة
+    setWinner(null);
+    setJesterWon(false);
+    setMafiaKill(null);
+    setVigilanteKill(null);
+    setVigilanteSuicide(false);
+    setSavedByDoctor(false);
+    setExecutedPlayer(null);
+    setDeathWillMessage(null);
+    
+    setPhase(PHASES.ROLE_REVEAL); 
   };
 
   if (!isAuthenticated) return <GatewayScreen onVerify={handleVerify} />;
@@ -152,17 +181,17 @@ export default function App() {
     case PHASES.NIGHT_TURN:
       return <NightTurnScreen player={nightQueue[currentNightIndex]} players={players} mode={mode} onActionComplete={handleNightActionComplete} />;
     case PHASES.GROUP_WAKE:
-      return <GroupWakeScreen onContinue={() => setPhase(PHASES.DAY_RESULT)} />;
-    case PHASES.DAY_RESULT:
-      return <DayResultScreen killedPlayer={killedPlayer} savedByDoctor={savedByDoctor} deathWillMessage={deathWillMessage} onContinue={() => setPhase(PHASES.DISCUSSION)} />;
+      return <GroupWakeScreen onContinue={() => setPhase(PHASES.MORNING_SEQUENCE)} />;
+    case PHASES.MORNING_SEQUENCE:
+      return <MorningSequenceScreen mafiaKill={mafiaKill} savedByDoctor={savedByDoctor} vigilanteKill={vigilanteKill} vigilanteSuicide={vigilanteSuicide} deathWillMessage={deathWillMessage} onComplete={() => setPhase(PHASES.DISCUSSION)} />;
     case PHASES.DISCUSSION:
       return <DiscussionScreen aliveCount={players.filter(p => p.isAlive).length} onContinue={() => setPhase(PHASES.VOTING)} />;
     case PHASES.VOTING:
       return <VotingScreen alivePlayers={players.filter(p => p.isAlive)} onVoteComplete={handleVoteComplete} />;
     case PHASES.EXECUTION:
-      return <ExecutionScreen executedPlayer={executedPlayer} deathWillMessage={deathWillMessage} onContinue={() => setPhase(PHASES.GROUP_SLEEP)} />;
+      return <ExecutionScreen executedPlayer={executedPlayer} onContinue={() => setPhase(PHASES.GROUP_SLEEP)} />;
     case PHASES.GAME_OVER:
-      return <GameOverScreen winner={winner} jesterWon={jesterWon} players={players} onRestart={handleRestart} />;
+      return <GameOverScreen winner={winner} jesterWon={jesterWon} players={players} onRestart={handleRestart} onPlayAgain={handlePlayAgain} />;
     default:
       return <div className="center-content"><h2 style={{ color: "var(--primary-gold)" }}>جاري التحميل...</h2></div>;
   }
