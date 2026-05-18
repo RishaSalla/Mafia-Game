@@ -15,13 +15,22 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  -webkit-tap-highlight-color: transparent; /* يمنع وميض الضغط في الجوال */
+  -webkit-tap-highlight-color: transparent; /* إزالة وميض اللمس في الجوال */
 }
 
-/* القضاء النهائي على أثر الـ Focus في جميع المتصفحات */
-button:focus, input:focus, select:focus {
+/* 🛡️ الحماية القصوى من أثر المتصفحات (Focus & Outline) 🛡️ */
+button, input, select, textarea {
   outline: none !important;
   box-shadow: none !important;
+}
+
+button:focus, input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+button::-moz-focus-inner {
+  border: 0;
 }
 
 body {
@@ -84,7 +93,7 @@ h2, h3 {
 }
 
 .input-field:focus {
-  border-color: var(--primary-gold);
+  border-color: var(--primary-gold) !important;
 }
 
 .btn {
@@ -134,14 +143,15 @@ h2, h3 {
 }
 
 .blood-glow {
-  box-shadow: inset 0 0 50px rgba(139, 0, 0, 0.5);
+  box-shadow: inset 0 0 60px rgba(139, 0, 0, 0.6);
 }
 
+/* تخصيص شريط التمرير */
 .scroll-container::-webkit-scrollbar {
   width: 6px;
 }
 .scroll-container::-webkit-scrollbar-track {
-  background: #111; 
+  background: transparent; 
 }
 .scroll-container::-webkit-scrollbar-thumb {
   background: var(--primary-gold); 
