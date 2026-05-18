@@ -3,6 +3,7 @@ import { verifyAccessCode } from './logic/auth';
 import { 
   MODES, 
   PHASES, 
+  ROLES, 
   distributeRoles, 
   createNightQueue, 
   resolveNight, 
