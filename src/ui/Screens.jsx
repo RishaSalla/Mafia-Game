@@ -21,7 +21,7 @@ export const GatewayScreen = ({ onVerify }) => {
     <div className="center-content fade-in">
       <SmokeBackground />
       <div className="card" style={{ zIndex: 1 }}>
-        <h1 style={{ color: "var(--primary-gold)", fontSize: "2.8rem" }}>لعبة المافيا</h1>
+        <h1 style={{ color: "var(--primary-gold)", fontSize: "2.8rem" }}>المافيا</h1>
         <p style={{ margin: "10px 0 20px" }}>الرجاء إدخال كود التفعيل للبدء</p>
         <input 
           type="text" 
@@ -40,7 +40,7 @@ export const GatewayScreen = ({ onVerify }) => {
 };
 
 // ==========================================
-// 2. القائمة الرئيسية (بطاقات تفاعلية)
+// 2. القائمة الرئيسية (الأسماء التسويقية المعتمدة)
 // ==========================================
 export const MainMenuScreen = ({ onSelectMode }) => {
   const [showRules, setShowRules] = useState(false);
@@ -54,7 +54,7 @@ export const MainMenuScreen = ({ onSelectMode }) => {
         <p style={{ marginBottom: "20px", fontSize: "1.2rem" }}>اختر طريقة اللعب</p>
         
         <ModeCard 
-          title="المافيا الكلاسيكي" 
+          title="المافيا الأصلية" 
           description="لعب سريع، أدوار أساسية (مافيا، طبيب، محقق، مواطنين)." 
           isActive={false} 
           isAdvanced={false}
@@ -62,15 +62,15 @@ export const MainMenuScreen = ({ onSelectMode }) => {
         />
 
         <ModeCard 
-          title="المافيا المطور" 
-          description="يضيف (القناص، المختل) ونظام الوصية الإجبارية." 
+          title="المافيا الفوضى" 
+          description="يضيف (القناص، المختل الأناني) ونظام الوصية الإجبارية وقفص الاتهام." 
           isActive={false} 
           isAdvanced={true}
-          onClick={() => onSelectMode(MODES.ADVANCED)} 
+          onClick={() => onSelectMode(MODES.CHAOS)} 
         />
 
         <button className="btn btn-secondary" onClick={() => setShowRules(true)} style={{ marginTop: '20px' }}>
-          دليل اللعب (التعليمات)
+          دليل القوانين (التعليمات)
         </button>
 
         {showRules && <RulesModal onClose={() => setShowRules(false)} />}
@@ -84,7 +84,7 @@ export const MainMenuScreen = ({ onSelectMode }) => {
 // ==========================================
 export const SetupScreen = ({ players, setPlayers, startGame, mode }) => {
   const [name, setName] = useState("");
-  const minPlayers = mode === MODES.ADVANCED ? 6 : 4;
+  const minPlayers = mode === MODES.CHAOS ? 6 : 4;
 
   const handleAdd = () => {
     if (name.trim() !== "" && !players.includes(name.trim())) {
@@ -132,7 +132,7 @@ export const SetupScreen = ({ players, setPlayers, startGame, mode }) => {
 };
 
 // ==========================================
-// 4. مرحلة كشف الأدوار (منع النقر المزدوج)
+// 4. مرحلة كشف الأدوار
 // ==========================================
 export const RoleRevealScreen = ({ players, onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -157,13 +157,11 @@ export const RoleRevealScreen = ({ players, onComplete }) => {
             <h2 style={{ color: 'var(--text-dim)' }}>توزيع الأدوار</h2>
             <p style={{ marginTop: '10px' }}>الرجاء تمرير الجهاز بسرية إلى:</p>
             <h1 style={{ color: 'var(--primary-gold)', fontSize: '3rem', margin: '20px 0' }}>{player.name}</h1>
-            {/* الزر في المنتصف */}
             <button className="btn btn-primary" onClick={() => setShowRole(true)}>أنا {player.name}، اكشف دوري</button>
           </div>
         ) : (
           <>
             <RoleCard role={player.role} />
-            {/* الزر في الأسفل لتفادي النقر المزدوج العرضي */}
             <div style={{ marginTop: 'auto', paddingTop: '30px' }}>
               <button className="btn btn-danger" onClick={handleNext}>
                 إخفاء الدور وتمرير الجهاز
@@ -177,7 +175,7 @@ export const RoleRevealScreen = ({ players, onComplete }) => {
 };
 
 // ==========================================
-// 5. التمهيد والتوجيه الجماعي لمدير الجلسة
+// 5. التمهيد والتوجيه الجماعي
 // ==========================================
 export const FirstDayIntroScreen = ({ onContinue }) => (
   <div className="center-content fade-in">
@@ -216,7 +214,7 @@ export const GroupWakeScreen = ({ onContinue }) => (
 );
 
 // ==========================================
-// 6. شاشات الليل والتمرير (Decoy Grid)
+// 6. شاشات الليل والتمرير 
 // ==========================================
 export const NightTransitionScreen = ({ targetPlayer, onReady }) => (
   <div className="center-content fade-in">
@@ -235,7 +233,7 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
   const [investigationResult, setInvestigationResult] = useState(null);
   const [showRules, setShowRules] = useState(false);
 
-  const isAdvanced = mode === MODES.ADVANCED;
+  const isChaos = mode === MODES.CHAOS;
   const aliveOthers = players.filter(p => p.id !== player.id && p.isAlive);
   const mafiaMates = players.filter(p => p.role === ROLES.MAFIA && p.id !== player.id && p.isAlive);
 
@@ -244,12 +242,15 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
   };
 
   const renderRoleAction = () => {
+    // تحديث المحقق: يرى الدور التفصيلي الصريح (مافيا، مختل، طبيب، قناص..)
     if (investigationResult) {
+      const isMafia = investigationResult.role === ROLES.MAFIA;
+      const exactRoleTitle = getRoleMeta(investigationResult.role).title;
       return (
         <div style={{ padding: "20px", border: "1px solid var(--primary-gold)", borderRadius: "8px" }}>
           <p>نتيجة التحقيق السري:</p>
-          <h2 style={{ color: investigationResult.role === ROLES.MAFIA ? "var(--crimson-red)" : "var(--primary-gold)", marginTop: "10px" }}>
-            [ {investigationResult.name} ] هو {investigationResult.role === ROLES.MAFIA ? "مافيا" : "بريء"}
+          <h2 style={{ color: isMafia ? "var(--crimson-red)" : "var(--primary-gold)", marginTop: "10px", fontSize: '1.8rem' }}>
+            [ {investigationResult.name} ] هو:<br/>{exactRoleTitle}
           </h2>
         </div>
       );
@@ -265,12 +266,11 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
       promptText = player.hasSelfHealed ? "من تريد إنقاذه؟ (لا يمكنك حماية نفسك مرة أخرى)" : "من تريد إنقاذه الليلة؟";
       targetList = player.hasSelfHealed ? aliveOthers : players.filter(p => p.isAlive); 
     } else if (player.role === ROLES.DETECTIVE) {
-      promptText = "اختر شخصاً للتحقيق في هويته:";
+      promptText = "اختر شخصاً للتحقيق في هويته الكاملة:";
     } else if (player.role === ROLES.VIGILANTE) {
       promptText = player.bullets > 0 ? "هل ترغب في قنص أحدهم الليلة؟" : "لقد نفدت ذخيرتك.";
       if (player.bullets === 0) targetList = [];
     } else {
-      // شبكة التمويه للمواطن والمختل
       isDecoy = true;
       promptText = "أنت لا تملك قدرات ليلية. للتمويه على من حولك، المس أي اسم عشوائياً قبل إنهاء دورك:";
     }
@@ -286,7 +286,6 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
         
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
           {targetList.map(p => {
-            // المافيا لا يمكنهم اختيار زملائهم
             const isMafiaMate = player.role === ROLES.MAFIA && p.role === ROLES.MAFIA;
             return (
               <PlayerButton 
@@ -302,7 +301,6 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
             );
           })}
           
-          {/* زر التخطي للطبيب والقناص */}
           {(player.role === ROLES.DOCTOR || player.role === ROLES.VIGILANTE) && player.bullets !== 0 && (
             <button 
               className={`btn ${targetId === null ? "btn-primary" : "btn-secondary"}`} 
@@ -317,7 +315,6 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
     );
   };
 
-  // زر التأكيد معطل حتى يختار اللاعب هدفاً (حتى المواطن مجبر على التمويه)
   const isConfirmDisabled = (player.role !== ROLES.DOCTOR && player.role !== ROLES.VIGILANTE) && targetId === null && investigationResult === null;
 
   return (
@@ -331,9 +328,9 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
         {renderRoleAction()}
       </div>
 
-      {isAdvanced && !investigationResult && (
+      {isChaos && !investigationResult && (
         <div className="card" style={{ marginTop: "15px", padding: '15px' }}>
-          <p style={{ fontSize: "1rem", color: "var(--text-dim)" }}>الوصية (تُقرأ للجميع غداً إذا مت الليلة):</p>
+          <p style={{ fontSize: "1rem", color: "var(--text-dim)" }}>الوصية الجنائية (تُقرأ للجميع إذا مت الليلة):</p>
           <select 
             className="input-field" 
             style={{ fontSize: "1rem", padding: "10px", marginTop: "10px", backgroundColor: 'rgba(0,0,0,0.3)' }}
@@ -356,20 +353,24 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
 };
 
 // ==========================================
-// 7. السرد الصباحي الدرامي المتسلسل (جديد بالكامل)
+// 7. السرد الصباحي الدرامي
 // ==========================================
-export const MorningSequenceScreen = ({ mafiaKill, savedByDoctor, vigilanteKill, vigilanteSuicide, deathWillMessage, onComplete }) => {
+export const MorningSequenceScreen = ({ mafiaKill, savedByDoctor, vigilanteKill, vigilanteSuicide, jesterWon, deathWillMessage, onComplete }) => {
   const [stepIndex, setStepIndex] = useState(0);
-
-  // بناء أحداث الصباح بناءً على ما حدث في الليل
   const events = [];
 
-  // الحدث 1: المافيا والطبيب
+  // إذا فاز المختل برصاصة القناص بالليل، نختصر الصباح وننتقل للنهاية
+  if (jesterWon) {
+    onComplete();
+    return null;
+  }
+
+  // الحدث 1: المافيا والطبيب (بدون كشف الدور)
   if (mafiaKill) {
     events.push({
       type: 'kill',
       title: 'جريمة المافيا',
-      text: `بكل أسف.. تم العثور على [ ${mafiaKill.name} ] مقتولاً الليلة الماضية.`,
+      text: `بكل أسف.. تم العثور على [ ${mafiaKill.name} ] مقتولاً الليلة الماضية.\n(تبين بعد تفتيشه أنه: مواطن بريء)`, // المافيا لا تقتل المافيا
       will: deathWillMessage,
       color: 'var(--crimson-red)',
       icon: <ShatteredGlassSVG />
@@ -392,22 +393,24 @@ export const MorningSequenceScreen = ({ mafiaKill, savedByDoctor, vigilanteKill,
     });
   }
 
-  // الحدث 2: القناص (إن وجد)
+  // الحدث 2: القناص (بدون كشف الدور التفصيلي)
   if (vigilanteKill) {
+    const isVictimMafia = vigilanteKill.role === ROLES.MAFIA;
+    const hideRoleStr = isVictimMafia ? "مافيا" : "مواطن بريء";
+
     events.push({
       type: 'vigilante_shot',
       title: 'رصاصة القناص',
-      text: `سمعت المدينة دوي رصاصة أخرى! القناص أخذ العدالة بيده وقتل [ ${vigilanteKill.name} ].`,
+      text: `سمعت المدينة دوي رصاصة أخرى! القناص أخذ العدالة بيده وقتل [ ${vigilanteKill.name} ].\n(تبين بعد تفتيشه أنه: ${hideRoleStr})`,
       color: 'var(--primary-gold)'
     });
   }
 
-  // الحدث 3: انتحار القناص (العقاب)
   if (vigilanteSuicide) {
     events.push({
       type: 'vigilante_suicide',
       title: 'عقاب القناص',
-      text: `بما أن ضحية القناص كان بريئاً (ليس من المافيا).. لم يتحمل القناص تأنيب الضمير وانتحر فوراً!`,
+      text: `بما أن ضحية القناص كان بريئاً.. لم يتحمل القناص تأنيب الضمير وانتحر فوراً!`,
       color: 'var(--crimson-red)'
     });
   }
@@ -418,7 +421,7 @@ export const MorningSequenceScreen = ({ mafiaKill, savedByDoctor, vigilanteKill,
     if (stepIndex < events.length - 1) {
       setStepIndex(stepIndex + 1);
     } else {
-      onComplete(); // الذهاب للنقاش
+      onComplete(); 
     }
   };
 
@@ -429,11 +432,11 @@ export const MorningSequenceScreen = ({ mafiaKill, savedByDoctor, vigilanteKill,
       <div className="card" style={{ zIndex: 11, minHeight: '250px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ color: currentEvent.color, marginBottom: '20px' }}>{currentEvent.title}</h1>
-          <p className="typewriter-text" style={{ fontSize: "1.3rem", lineHeight: '1.6' }}>{currentEvent.text}</p>
+          <p style={{ fontSize: "1.3rem", lineHeight: '1.6', whiteSpace: 'pre-line' }}>{currentEvent.text}</p>
           
           {currentEvent.will && (
             <div className="fade-in" style={{ marginTop: "20px", padding: "15px", border: "1px solid var(--text-dim)", background: "rgba(0,0,0,0.5)", borderRadius: '8px' }}>
-              <h3 style={{ color: "var(--text-dim)", marginBottom: "10px" }}>الوصية التي تركها الضحية:</h3>
+              <h3 style={{ color: "var(--text-dim)", marginBottom: "10px" }}>الوصية الجنائية للضحية:</h3>
               <p style={{ color: "var(--primary-gold)", fontSize: '1.2rem', fontStyle: 'italic' }}>"{currentEvent.will}"</p>
             </div>
           )}
@@ -474,12 +477,12 @@ export const DiscussionScreen = ({ aliveCount, onContinue }) => {
 };
 
 // ==========================================
-// 9. المحكمة والتصويت السري (منع أثر الـ Focus)
+// 9. التصويت السري 
 // ==========================================
 export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
   const [votes, setVotes] = useState({});
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-  const [step, setStep] = useState('call'); // 'call' أو 'vote'
+  const [step, setStep] = useState('call'); 
 
   const voter = alivePlayers[currentPlayerIndex];
   const targets = alivePlayers.filter(p => p.id !== voter.id);
@@ -493,7 +496,7 @@ export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
 
     if (currentPlayerIndex < alivePlayers.length - 1) {
       setCurrentPlayerIndex(currentPlayerIndex + 1);
-      setStep('call'); // إخفاء الأزرار فوراً والعودة للنداء
+      setStep('call'); 
     } else {
       onVoteComplete(newVotes);
     }
@@ -504,8 +507,8 @@ export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
       <div className="center-content fade-in">
         <div className="card" style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ margin: 'auto' }}>
-            <h2 style={{ color: 'var(--text-dim)' }}>قاعة المحكمة</h2>
-            <p style={{ marginTop: '10px' }}>الرجاء تمرير الجهاز للتصويت السري إلى:</p>
+            <h2 style={{ color: 'var(--text-dim)' }}>التصويت السري</h2>
+            <p style={{ marginTop: '10px' }}>الرجاء تمرير الجهاز للتصويت إلى:</p>
             <h1 style={{ color: "var(--primary-gold)", fontSize: "3rem", margin: "20px 0" }}>{voter.name}</h1>
             <button className="btn btn-primary" onClick={() => setStep('vote')}>أنا {voter.name}، جاهز للتصويت</button>
           </div>
@@ -517,8 +520,8 @@ export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
   return (
     <div className="center-content fade-in">
       <div className="card">
-        <h2>التصويت السري لـ: <span style={{ color: "var(--primary-gold)" }}>{voter.name}</span></h2>
-        <p style={{ margin: '15px 0', color: 'var(--text-dim)' }}>صوّت ضد من تعتقد أنه مذنب (بسرعة وسرية):</p>
+        <h2>تصويت: <span style={{ color: "var(--primary-gold)" }}>{voter.name}</span></h2>
+        <p style={{ margin: '15px 0', color: 'var(--text-dim)' }}>صوّت ضد المتهم (بسرعة وسرية):</p>
         
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
           {targets.map(p => (
@@ -539,35 +542,76 @@ export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
 };
 
 // ==========================================
-// 10. الإعدام والنهاية
+// 10. قفص الاتهام والقرار النهائي (جديد)
 // ==========================================
-export const ExecutionScreen = ({ executedPlayer, onContinue }) => (
-  <div className="center-content fade-in blood-glow" style={{ padding: "20px", borderRadius: "12px", border: "1px solid var(--crimson-red)" }}>
-    <NooseSVG />
-    <div style={{ zIndex: 1, marginTop: "20px" }}>
-      <h1 style={{ color: "var(--crimson-red)", fontSize: '2.5rem', marginBottom: '15px' }}>قرار المحكمة</h1>
-      {executedPlayer ? (
-        <>
-          <p style={{ fontSize: "1.5rem" }}>بناءً على الأغلبية، تم إعدام: <strong style={{ color: "#fff" }}>{executedPlayer.name}</strong></p>
-          <p style={{ color: "var(--primary-gold)", marginTop: "15px", fontSize: '1.2rem' }}>وبعد تفتيشه، تبين أن دوره كان: {getRoleMeta(executedPlayer.role).title}</p>
-        </>
-      ) : (
-        <p style={{ fontSize: "1.3rem", color: "var(--text-main)", lineHeight: '1.6' }}>تشتتت الأصوات.. لم تتفق الأغلبية على شخص واحد، ولذلك تم تأجيل الإعدام.</p>
-      )}
-      <button className="btn btn-danger" style={{ marginTop: "30px" }} onClick={onContinue}>إغلاق المحكمة</button>
+export const DefenseScreen = ({ accusedPlayer, onComplete }) => (
+  <div className="center-content fade-in">
+    <div className="card blood-glow">
+      <h1 style={{ color: 'var(--crimson-red)' }}>قفص الاتهام</h1>
+      <p style={{ fontSize: '1.2rem', marginTop: '15px' }}>المتهم الأول بأغلبية الأصوات هو:</p>
+      <h2 style={{ fontSize: '3rem', color: '#fff', margin: '15px 0' }}>{accusedPlayer.name}</h2>
+      <p style={{ color: 'var(--text-dim)', lineHeight: '1.5' }}>لديك 30 ثانية للدفاع عن نفسك وتبرير موقفك أمام المدينة قبل إصدار الحكم.</p>
+      
+      <CountdownTimer initialSeconds={30} onExpire={onComplete} />
+      
+      <button className="btn btn-primary" onClick={onComplete} style={{ marginTop: '20px' }}>
+        انتهاء التبرير والتوجه للحكم النهائي
+      </button>
     </div>
   </div>
 );
 
+export const FinalDecisionScreen = ({ accusedPlayer, onDecision }) => (
+  <div className="center-content fade-in">
+    <NooseSVG />
+    <div className="card" style={{ marginTop: '20px' }}>
+      <h1 style={{ color: 'var(--primary-gold)' }}>الحكم النهائي</h1>
+      <p style={{ fontSize: '1.3rem', marginTop: '20px', lineHeight: '1.6' }}>
+        بعد الاستماع لدفاع <strong style={{color: '#fff'}}>{accusedPlayer.name}</strong>..<br/>
+        مدير الجلسة: هل اتفقت أغلبية الغرفة على إعدامه؟
+      </p>
+      
+      <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
+        <button className="btn btn-danger" style={{ padding: '15px' }} onClick={() => onDecision(true)}>نعم، إعدام</button>
+        <button className="btn btn-secondary" style={{ padding: '15px' }} onClick={() => onDecision(false)}>لا، براءة</button>
+      </div>
+    </div>
+  </div>
+);
+
+export const ExecutionScreen = ({ executedPlayer, onContinue }) => (
+  <div className="center-content fade-in" style={{ padding: "20px" }}>
+    <div className="card" style={{ zIndex: 1 }}>
+      <h1 style={{ color: "var(--crimson-red)", fontSize: '2.5rem', marginBottom: '15px' }}>نتيجة المحكمة</h1>
+      {executedPlayer ? (
+        <>
+          <p style={{ fontSize: "1.5rem" }}>تم إعدام: <strong style={{ color: "#fff" }}>{executedPlayer.name}</strong></p>
+          <p style={{ color: "var(--primary-gold)", marginTop: "15px", fontSize: '1.2rem' }}>
+            وبعد تفتيشه، تبين أنه: {executedPlayer.role === ROLES.MAFIA ? "مافيا" : "مواطن بريء"}
+          </p>
+        </>
+      ) : (
+        <p style={{ fontSize: "1.3rem", color: "var(--text-main)", lineHeight: '1.6' }}>
+          تشتتت الأصوات، أو قررت الغرفة البراءة..<br/>لا إعدام اليوم.
+        </p>
+      )}
+      <button className="btn btn-primary" style={{ marginTop: "30px" }} onClick={onContinue}>إغلاق المحكمة وبدء الليل</button>
+    </div>
+  </div>
+);
+
+// ==========================================
+// 11. شاشة النهاية (Game Over - كشف جميع الأوراق)
+// ==========================================
 export const GameOverScreen = ({ winner, jesterWon, players, onRestart, onPlayAgain }) => {
   let title = "";
   let color = "";
   let subtitle = "";
 
   if (jesterWon) {
-    title = "المختل خدع الجميع!";
+    title = "المختل الأناني فاز!";
     color = "#a64dff";
-    subtitle = "لقد تلاعب بكم ونجح في جعلكم تعدمونه، فاز المختل وحده!";
+    subtitle = "لقد تلاعب بكم جميعاً ونجح في هدفه، فاز المختل لوحده!";
   } else if (winner === "mafia") {
     title = "انتصار المافيا!";
     color = "var(--crimson-red)";
@@ -585,7 +629,7 @@ export const GameOverScreen = ({ winner, jesterWon, players, onRestart, onPlayAg
       
       <div className="card" style={{ width: "100%", padding: "20px" }}>
         <h3 style={{ marginBottom: "15px", color: "var(--text-dim)", borderBottom: "1px solid #333", paddingBottom: "10px" }}>
-          الأدوار الحقيقية:
+          الأدوار الحقيقية للجميع:
         </h3>
         {players.map(p => (
           <div key={p.id} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid #222", fontSize: '1.1rem' }}>
