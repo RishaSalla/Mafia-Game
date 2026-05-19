@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { verifyAccessCode } from './logic/auth';
 import { 
   MODES, 
   PHASES, 
@@ -12,7 +11,6 @@ import {
   checkWinCondition 
 } from './logic/gameEngine';
 import { 
-  GatewayScreen, 
   MainMenuScreen, 
   SetupScreen, 
   RoleRevealScreen,
@@ -32,7 +30,6 @@ import {
 import './index.css';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mode, setMode] = useState(null);
   const [phase, setPhase] = useState(PHASES.SETUP);
   
@@ -53,12 +50,6 @@ export default function App() {
   const [executedPlayer, setExecutedPlayer] = useState(null);
   const [winner, setWinner] = useState(null);
   const [jesterWon, setJesterWon] = useState(false);
-
-  const handleVerify = async (code) => {
-    const isValid = await verifyAccessCode(code);
-    if (isValid) setIsAuthenticated(true);
-    return isValid;
-  };
 
   const startGame = () => {
     const initializedPlayers = distributeRoles(players, mode);
@@ -188,7 +179,7 @@ export default function App() {
     setPhase(PHASES.ROLE_REVEAL); 
   };
 
-  if (!isAuthenticated) return <GatewayScreen onVerify={handleVerify} />;
+  // تم مسح سطر التحقق القديم هنا، واللعبة ستبدأ مباشرة من القائمة الرئيسية بعد اجتياز بوابة رقم الجوال
   if (!mode) return <MainMenuScreen onSelectMode={setMode} />;
 
   switch (phase) {
