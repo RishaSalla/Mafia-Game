@@ -5,72 +5,26 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>لعبة المافيا</title>
-    
-    <style>
-      #auth-screen {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        background-color: #f3f4f6;
-        font-family: sans-serif;
-        margin: 0;
-      }
-      .auth-box {
-        background: white;
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        text-align: center;
-        max-width: 90%;
-        width: 400px;
-      }
-      .auth-input {
-        width: 100%;
-        padding: 0.75rem;
-        margin-bottom: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        font-size: 1rem;
-        text-align: center;
-        box-sizing: border-box;
-      }
-      .auth-btn {
-        width: 100%;
-        padding: 0.75rem;
-        background-color: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-        font-weight: bold;
-      }
-      .auth-btn:disabled { background-color: #93c5fd; }
-      #error-msg { color: #dc2626; margin-top: 1rem; display: none; font-size: 0.9rem; }
-      
-      /* إخفاء اللعبة في البداية */
-      #root { display: none; }
-    </style>
   </head>
-  <body style="margin: 0;">
-    
-    <div id="auth-screen">
-      <div class="auth-box">
-        <h2 style="margin-bottom: 1rem; color: #333;">تسجيل الدخول - المافيا</h2>
-        <p style="margin-bottom: 1.5rem; color: #666; font-size: 0.9rem;">أدخل رقم الجوال الذي قمت بالشراء به</p>
-        <input type="tel" id="phone-input" class="auth-input" placeholder="05XXXXXXXX" dir="ltr" />
-        <button id="login-btn" class="auth-btn">تحقق وابدأ اللعب</button>
-        <p id="error-msg"></p>
+  <body>
+
+    <div id="auth-screen" class="center-content fade-in">
+      <div class="card">
+        <h2 style="color: var(--primary-gold); margin-bottom: 10px;">بوابة الدخول</h2>
+        <p style="color: var(--text-dim); margin-bottom: 20px; font-size: 0.95rem;">أدخل رقم الجوال الذي قمت بالشراء به</p>
+        
+        <input type="tel" id="phone-input" class="input-field" placeholder="05XXXXXXXX" dir="ltr" />
+        <button id="login-btn" class="btn btn-primary">تحقق وابدأ اللعب</button>
+        
+        <p id="error-msg" style="color: var(--bright-red); margin-top: 15px; display: none; font-size: 1rem; font-weight: 700;"></p>
       </div>
     </div>
 
-    <div id="root"></div>
+    <div id="root" style="display: none;"></div>
 
     <script>
       const API_URL = "https://script.google.com/macros/s/AKfycbxrgwlNy4ZvuLdoEqo-aNgEqC7BD0N5eKzzRTtWR7M8BV8TDH5OOtqzaXewTz1QttYo/exec";
-      const GAME_ID = "mafia"; // نفس الرمز الذي كتبناه في الجدول
+      const GAME_ID = "mafia"; 
       let checkInterval;
 
       const authScreen = document.getElementById('auth-screen');
@@ -88,6 +42,7 @@
         }
 
         loginBtn.textContent = "جاري التحقق...";
+        loginBtn.style.opacity = "0.7";
         loginBtn.disabled = true;
         errorMsg.style.display = "none";
 
@@ -96,11 +51,11 @@
           const data = await res.json();
 
           if (data.status === "success") {
-            // نجاح الدخول - تفعيل اللعبة وإخفاء القفل
+            // نجاح الدخول - حفظ الجلسة وإظهار اللعبة
             localStorage.setItem('session_mafia', data.session);
             localStorage.setItem('phone_mafia', phone);
             
-            authScreen.style.display = "none";
+            authScreen.remove(); // إزالة شاشة القفل بالكامل
             gameRoot.style.display = "block"; // إظهار اللعبة
             
             startHeartbeat(phone, data.session);
@@ -110,11 +65,12 @@
             errorMsg.style.display = "block";
           }
         } catch (e) {
-          errorMsg.textContent = "حدث خطأ في الاتصال، حاول مجدداً";
+          errorMsg.textContent = "حدث خطأ في الاتصال، تأكد من الإنترنت";
           errorMsg.style.display = "block";
         }
 
         loginBtn.textContent = "تحقق وابدأ اللعب";
+        loginBtn.style.opacity = "1";
         loginBtn.disabled = false;
       });
 
@@ -126,10 +82,10 @@
             const data = await res.json();
             
             if (data.status === "kick") {
-              alert(data.message); // رسالة الطرد
+              alert(data.message); // إظهار رسالة الطرد
               clearInterval(checkInterval);
               localStorage.removeItem('session_mafia');
-              window.location.reload(); // إعادة تحميل الصفحة للقفل
+              window.location.reload(); // إعادة تحميل الصفحة ليظهر القفل مجدداً
             }
           } catch (e) {
             console.log("Heartbeat error");
