@@ -24,6 +24,8 @@ import {
   MorningSequenceScreen, 
   DiscussionScreen,
   VotingScreen, 
+  DefenseScreen, 
+  FinalDecisionScreen, 
   ExecutionScreen, 
   GameOverScreen 
 } from './ui/Screens';
@@ -47,6 +49,7 @@ export default function App() {
   const [deathWillMessage, setDeathWillMessage] = useState(null);
   
   // المحكمة والنهاية
+  const [accusedPlayerToDefend, setAccusedPlayerToDefend] = useState(null);
   const [executedPlayer, setExecutedPlayer] = useState(null);
   const [winner, setWinner] = useState(null);
   const [jesterWon, setJesterWon] = useState(false);
@@ -93,7 +96,7 @@ export default function App() {
       setVigilanteSuicide(result.vigilanteSuicide);
       setSavedByDoctor(result.savedByDoctor);
 
-      // استخراج نص الوصية إن وجدت
+      // استخراج الوصية إن وجدت
       let willMsg = null;
       if (result.mafiaKill && result.mafiaKill.deathWillTargetId !== null) {
         const target = result.updatedPlayers.find(p => p.id === result.mafiaKill.deathWillTargetId);
@@ -101,6 +104,13 @@ export default function App() {
       }
       setDeathWillMessage(willMsg);
       
+      // إذا فاز المختل برصاصة القناص
+      if (result.jesterWon) {
+         setJesterWon(true);
+         setPhase(PHASES.GAME_OVER);
+         return;
+      }
+
       const win = checkWinCondition(result.updatedPlayers);
       if (win) {
         setWinner(win);
@@ -113,13 +123,26 @@ export default function App() {
 
   const handleVoteComplete = (votes) => {
     const result = resolveVoting(players, votes);
-    if (result.accusedPlayer) {
-      const execResult = executePlayer(players, result.accusedPlayer.id);
+    // إذا حصل شخص على أغلبية (النصف + 1)
+    if (result.accusedPlayer && result.reachedThreshold) {
+      setAccusedPlayerToDefend(result.accusedPlayer);
+      setPhase(PHASES.DEFENSE);
+    } else {
+      // تشتت الأصوات أو امتناع
+      setExecutedPlayer(null);
+      setPhase(PHASES.EXECUTION);
+    }
+  };
+
+  const handleDecisionComplete = (isGuilty) => {
+    if (isGuilty && accusedPlayerToDefend) {
+      const execResult = executePlayer(players, accusedPlayerToDefend.id);
       setPlayers(execResult.updatedPlayers);
       setExecutedPlayer(execResult.executedPlayer);
-      setJesterWon(execResult.jesterWon);
       
+      // إذا تم إعدام المختل، يفوز فوراً
       if (execResult.jesterWon) {
+         setJesterWon(true);
          setPhase(PHASES.GAME_OVER);
          return;
       }
@@ -132,12 +155,13 @@ export default function App() {
         setPhase(PHASES.EXECUTION);
       }
     } else {
+      // قرار بالبراءة
       setExecutedPlayer(null);
       setPhase(PHASES.EXECUTION);
     }
+    setAccusedPlayerToDefend(null);
   };
 
-  // إنهاء الجلسة بالكامل
   const handleRestart = () => {
     setMode(null);
     setPhase(PHASES.SETUP);
@@ -146,13 +170,11 @@ export default function App() {
     setJesterWon(false);
   };
 
-  // لعب جديد بنفس الأسماء
   const handlePlayAgain = () => {
     const playerNames = players.map(p => p.name);
     const newPlayers = distributeRoles(playerNames, mode);
     setPlayers(newPlayers);
     
-    // تصفير سجلات اللعبة السابقة
     setWinner(null);
     setJesterWon(false);
     setMafiaKill(null);
@@ -161,6 +183,7 @@ export default function App() {
     setSavedByDoctor(false);
     setExecutedPlayer(null);
     setDeathWillMessage(null);
+    setAccusedPlayerToDefend(null);
     
     setPhase(PHASES.ROLE_REVEAL); 
   };
@@ -184,11 +207,15 @@ export default function App() {
     case PHASES.GROUP_WAKE:
       return <GroupWakeScreen onContinue={() => setPhase(PHASES.MORNING_SEQUENCE)} />;
     case PHASES.MORNING_SEQUENCE:
-      return <MorningSequenceScreen mafiaKill={mafiaKill} savedByDoctor={savedByDoctor} vigilanteKill={vigilanteKill} vigilanteSuicide={vigilanteSuicide} deathWillMessage={deathWillMessage} onComplete={() => setPhase(PHASES.DISCUSSION)} />;
+      return <MorningSequenceScreen mafiaKill={mafiaKill} savedByDoctor={savedByDoctor} vigilanteKill={vigilanteKill} vigilanteSuicide={vigilanteSuicide} jesterWon={jesterWon} deathWillMessage={deathWillMessage} onComplete={() => setPhase(PHASES.DISCUSSION)} />;
     case PHASES.DISCUSSION:
       return <DiscussionScreen aliveCount={players.filter(p => p.isAlive).length} onContinue={() => setPhase(PHASES.VOTING)} />;
     case PHASES.VOTING:
       return <VotingScreen alivePlayers={players.filter(p => p.isAlive)} onVoteComplete={handleVoteComplete} />;
+    case PHASES.DEFENSE:
+      return <DefenseScreen accusedPlayer={accusedPlayerToDefend} onComplete={() => setPhase(PHASES.FINAL_DECISION)} />;
+    case PHASES.FINAL_DECISION:
+      return <FinalDecisionScreen accusedPlayer={accusedPlayerToDefend} onDecision={handleDecisionComplete} />;
     case PHASES.EXECUTION:
       return <ExecutionScreen executedPlayer={executedPlayer} onContinue={() => setPhase(PHASES.GROUP_SLEEP)} />;
     case PHASES.GAME_OVER:
