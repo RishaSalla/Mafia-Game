@@ -10,7 +10,7 @@ import {
 } from './SVGGraphics';
 
 // ==========================================
-// 1. بيانات الأدوار (الأسماء الأصلية لجذور المافيا)
+// 1. بيانات الأدوار الأصلية كاشفة الأوراق
 // ==========================================
 export const getRoleMeta = (role) => {
   const meta = {
@@ -22,12 +22,12 @@ export const getRoleMeta = (role) => {
     [ROLES.DOCTOR]: { 
       title: 'الطبيب', 
       Icon: DoctorIcon, 
-      desc: 'أنت الطبيب.. اختر شخصاً لإنقاذه من القتل الليلة (يمكنك حماية نفسك مرة واحدة فقط).' 
+      desc: 'أنت الطبيب.. اختر شخصاً لإنقاذه من القتل الليلة (يمكنك حماية نفسك مرة واحدة فقط طوال اللعبة).' 
     },
     [ROLES.DETECTIVE]: { 
       title: 'المحقق', 
       Icon: DetectiveIcon, 
-      desc: 'أنت المحقق.. اختر شخصاً في الليل لمعرفة ما إذا كان مافيا أم لا.' 
+      desc: 'أنت كاشف الأسرار.. اختر شخصاً في الليل لتعرف دوره الحقيقي والكامل فوراً.' 
     },
     [ROLES.CITIZEN]: { 
       title: 'مواطن', 
@@ -37,19 +37,19 @@ export const getRoleMeta = (role) => {
     [ROLES.JESTER]: { 
       title: 'المختل', 
       Icon: JesterIcon, 
-      desc: 'أنت تلعب لنفسك فقط.. تلاعب بالجميع ليقوموا بالتصويت على إعدامك، وإذا أعدموك تنتصر!' 
+      desc: 'أنت تلعب لنفسك فقط.. تلاعب بالجميع ليقوموا بإعدامك في المحكمة أو اجعل القناص يطلق النار عليك لتفوز فوراً وتنهي اللعبة!' 
     },
     [ROLES.VIGILANTE]: { 
       title: 'القناص', 
       Icon: VigilanteIcon, 
-      desc: 'تملك رصاصة واحدة لقتل أي شخص ليلاً.. ولكن احذر، إذا قتلت بريئاً ستنتحر فوراً.' 
+      desc: 'تملك رصاصة واحدة لقتل أي شخص ليلاً.. إذا قتلت المافيا أو المختل فأنت بطل، وإذا قتلت بريئاً ستنتحر في الصباح التالي.' 
     }
   };
   return meta[role] || meta[ROLES.CITIZEN];
 };
 
 // ==========================================
-// 2. بطاقة الدور (التي تظهر عند كشف الدور)
+// 2. بطاقة عرض الدور السري
 // ==========================================
 export const RoleCard = ({ role }) => {
   const { title, Icon, desc } = getRoleMeta(role);
@@ -66,14 +66,14 @@ export const RoleCard = ({ role }) => {
 };
 
 // ==========================================
-// 3. زر اللاعب المحمي (Anti-Focus & Decoy Grid)
+// 3. زر اللاعب الآمن (Anti-Focus & Meta-Gaming)
 // ==========================================
 export const PlayerButton = ({ player, onClick, selected, disabled }) => {
   return (
     <button 
       className="btn btn-secondary" 
       onClick={(e) => {
-        e.currentTarget.blur(); // تفريغ التحديد (Focus) فوراً لحماية السرية
+        e.currentTarget.blur(); // كسر أثر التحديد (Focus) فوراً لحماية السرية
         onClick(player.id);
       }}
       disabled={disabled}
@@ -88,7 +88,6 @@ export const PlayerButton = ({ player, onClick, selected, disabled }) => {
       }}
     >
       {player.name}
-      {/* علامة SVG صغيرة جداً لاختيار اللاعب (لا تلفت الانتباه) */}
       {selected && (
         <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="var(--primary-gold)">
@@ -101,7 +100,7 @@ export const PlayerButton = ({ player, onClick, selected, disabled }) => {
 };
 
 // ==========================================
-// 4. بطاقة اختيار الطور (تفاعلية وأنيقة)
+// 4. بطاقة اختيار الأطوار التسويقية الفخمة
 // ==========================================
 export const ModeCard = ({ title, description, isActive, onClick, isAdvanced }) => {
   const activeColor = isAdvanced ? 'var(--crimson-red)' : 'var(--primary-gold)';
@@ -128,7 +127,7 @@ export const ModeCard = ({ title, description, isActive, onClick, isAdvanced }) 
 };
 
 // ==========================================
-// 5. العداد الزمني 
+// 5. العداد الزمني (توقيت التبرير والنقاش)
 // ==========================================
 export const CountdownTimer = ({ initialSeconds, onExpire }) => {
   const [seconds, setSeconds] = useState(initialSeconds);
@@ -153,7 +152,7 @@ export const CountdownTimer = ({ initialSeconds, onExpire }) => {
   return (
     <div style={{
       fontSize: '2.5rem', fontWeight: 'bold', fontFamily: 'monospace',
-      color: isCritical ? 'var(--crimson-red)' : 'var(--primary-gold)',
+      color: isCritical ? 'var(--bright-red)' : 'var(--primary-gold)',
       margin: '15px 0', transition: 'color 0.3s'
     }}>
       {formatTime(seconds)}
@@ -162,7 +161,7 @@ export const CountdownTimer = ({ initialSeconds, onExpire }) => {
 };
 
 // ==========================================
-// 6. أيقونة التعليمات الصامتة (SVG) ونافذة القوانين
+// 6. زر ودليل اللعب الصامت (Help Inside Game)
 // ==========================================
 export const HelpButton = ({ onClick }) => (
   <button 
@@ -186,25 +185,26 @@ export const RulesModal = ({ onClose }) => (
     display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px'
   }}>
     <div className="card scroll-container" style={{ maxHeight: '85vh', overflowY: 'auto', border: '1px solid var(--primary-gold)' }}>
-      <h2 style={{ color: 'var(--primary-gold)', borderBottom: '1px solid #333', paddingBottom: '10px' }}>دليل لعبة المافيا</h2>
+      <h2 style={{ color: 'var(--primary-gold)', borderBottom: '1px solid #333', paddingBottom: '10px' }}>دليل قوانين المافيا</h2>
 
-      <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>الأطوار:</h3>
+      <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>أطوار اللعب الرئيسية:</h3>
       <p style={{ color: 'var(--text-dim)', textAlign: 'right', marginBottom: '10px', fontSize: '0.95rem' }}>
-        - <strong style={{color: '#fff'}}>المافيا الكلاسيكي:</strong> الأدوار الأساسية (المافيا، الطبيب، المحقق، المواطن).
+        - <strong style={{color: '#fff'}}>المافيا الأصلية:</strong> العهد الكلاسيكي المباشر (مافيا، طبيب، محقق، مواطنين).
       </p>
       <p style={{ color: 'var(--text-dim)', textAlign: 'right', fontSize: '0.95rem' }}>
-        - <strong style={{color: '#fff'}}>المافيا المطور:</strong> يضيف شخصيات (المختل، والقناص). ونظام الوصية التي تُكتب ليلاً وتُقرأ للجميع إذا مات صاحبها.
+        - <strong style={{color: '#fff'}}>المافيا الفوضى:</strong> الطور المجنون، يضيف (القناص والمختل الأناني)، بالإضافة إلى نظام الوصايا والمحكمة المعززة.
       </p>
 
-      <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>قوانين سريعة:</h3>
+      <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>القدرات والقوانين الصارمة:</h3>
       <ul style={{ color: 'var(--text-dim)', textAlign: 'right', paddingRight: '20px', lineHeight: '1.8', fontSize: '0.95rem' }}>
-        <li>الطبيب لا يمكنه علاج نفسه إلا <strong>مرة واحدة فقط</strong> طوال اللعبة.</li>
-        <li>المافيا يعرفون بعضهم ليلاً ولا يمكنهم قتل بعضهم.</li>
-        <li>المواطن والمختل يجب أن يلمسوا الشاشة ليلاً للتمويه فقط لكي لا يُكشف دورهم.</li>
-        <li>المختل يفوز إذا أقنع المواطنين بالتصويت عليه وإعدامه في المحكمة!</li>
+        <li><strong>الطبيب:</strong> يحمي هدفاً كل ليلة، ويحق له حماية نفسه <strong style={{color: '#fff'}}>مرة واحدة فقط</strong> طوال اللعبة.</li>
+        <li><strong>المحقق:</strong> تحقيقه صادق ويكشف <strong style={{color: '#fff'}}>الدور الحقيقي والكامل</strong> للشخص المسؤل عنه فوراً ليلاً.</li>
+        <li><strong>القناص:</strong> يملك رصاصة واحدة. قتل المافيا أو المختل يجعله بطلاً، وقتل أي مواطن أو صاحب دور بريء يقتله فوراً بالانتحار صباحاً.</li>
+        <li><strong>المختل الأناني:</strong> يلعب وحده تماماً، يفوز فوراً وتنتهي اللعبة لصالحه إذا نجح في جعل المحكمة تعدمه بالتصويت أو جعل القناص يطلق النار عليه.</li>
+        <li><strong>المواطنون والمختل ليلاً:</strong> تظهر لهم شاشة أسماء مجبرين على لمسها عشوائياً للتمويه، حتى تتطابق حركة اليد للجميع ولا ينكشف أحد بجلسة التمرير.</li>
       </ul>
 
-      <button className="btn btn-primary" onClick={onClose} style={{ marginTop: '30px' }}>إغلاق التعليمات</button>
+      <button className="btn btn-primary" onClick={onClose} style={{ marginTop: '30px' }}>إغلاق وتكملة اللعب</button>
     </div>
   </div>
 );
