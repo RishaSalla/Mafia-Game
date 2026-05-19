@@ -5,9 +5,139 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>لعبة المافيا</title>
+    
+    <style>
+      #auth-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #f3f4f6;
+        font-family: sans-serif;
+        margin: 0;
+      }
+      .auth-box {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+        max-width: 90%;
+        width: 400px;
+      }
+      .auth-input {
+        width: 100%;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 1rem;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      .auth-btn {
+        width: 100%;
+        padding: 0.75rem;
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .auth-btn:disabled { background-color: #93c5fd; }
+      #error-msg { color: #dc2626; margin-top: 1rem; display: none; font-size: 0.9rem; }
+      
+      /* إخفاء اللعبة في البداية */
+      #root { display: none; }
+    </style>
   </head>
-  <body>
+  <body style="margin: 0;">
+    
+    <div id="auth-screen">
+      <div class="auth-box">
+        <h2 style="margin-bottom: 1rem; color: #333;">تسجيل الدخول - المافيا</h2>
+        <p style="margin-bottom: 1.5rem; color: #666; font-size: 0.9rem;">أدخل رقم الجوال الذي قمت بالشراء به</p>
+        <input type="tel" id="phone-input" class="auth-input" placeholder="05XXXXXXXX" dir="ltr" />
+        <button id="login-btn" class="auth-btn">تحقق وابدأ اللعب</button>
+        <p id="error-msg"></p>
+      </div>
+    </div>
+
     <div id="root"></div>
+
+    <script>
+      const API_URL = "https://script.google.com/macros/s/AKfycbxrgwlNy4ZvuLdoEqo-aNgEqC7BD0N5eKzzRTtWR7M8BV8TDH5OOtqzaXewTz1QttYo/exec";
+      const GAME_ID = "mafia"; // نفس الرمز الذي كتبناه في الجدول
+      let checkInterval;
+
+      const authScreen = document.getElementById('auth-screen');
+      const gameRoot = document.getElementById('root');
+      const loginBtn = document.getElementById('login-btn');
+      const phoneInput = document.getElementById('phone-input');
+      const errorMsg = document.getElementById('error-msg');
+
+      loginBtn.addEventListener('click', async () => {
+        const phone = phoneInput.value.trim();
+        if (!phone) {
+          errorMsg.textContent = "الرجاء إدخال رقم الجوال";
+          errorMsg.style.display = "block";
+          return;
+        }
+
+        loginBtn.textContent = "جاري التحقق...";
+        loginBtn.disabled = true;
+        errorMsg.style.display = "none";
+
+        try {
+          const res = await fetch(`${API_URL}?action=login&phone=${phone}&game=${GAME_ID}`);
+          const data = await res.json();
+
+          if (data.status === "success") {
+            // نجاح الدخول - تفعيل اللعبة وإخفاء القفل
+            localStorage.setItem('session_mafia', data.session);
+            localStorage.setItem('phone_mafia', phone);
+            
+            authScreen.style.display = "none";
+            gameRoot.style.display = "block"; // إظهار اللعبة
+            
+            startHeartbeat(phone, data.session);
+          } else {
+            // فشل الدخول
+            errorMsg.textContent = data.message;
+            errorMsg.style.display = "block";
+          }
+        } catch (e) {
+          errorMsg.textContent = "حدث خطأ في الاتصال، حاول مجدداً";
+          errorMsg.style.display = "block";
+        }
+
+        loginBtn.textContent = "تحقق وابدأ اللعب";
+        loginBtn.disabled = false;
+      });
+
+      // نظام حماية الجهاز الواحد (يتحقق كل 60 ثانية)
+      function startHeartbeat(phone, session) {
+        checkInterval = setInterval(async () => {
+          try {
+            const res = await fetch(`${API_URL}?action=check&phone=${phone}&game=${GAME_ID}&session=${session}`);
+            const data = await res.json();
+            
+            if (data.status === "kick") {
+              alert(data.message); // رسالة الطرد
+              clearInterval(checkInterval);
+              localStorage.removeItem('session_mafia');
+              window.location.reload(); // إعادة تحميل الصفحة للقفل
+            }
+          } catch (e) {
+            console.log("Heartbeat error");
+          }
+        }, 60000);
+      }
+    </script>
+
     <script type="module" src="/src/entry.jsx"></script>
   </body>
 </html>
