@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { verifyAccessCode } from './logic/auth';
 import { 
   MODES, 
   PHASES, 
@@ -11,6 +12,7 @@ import {
   checkWinCondition 
 } from './logic/gameEngine';
 import { 
+  GatewayScreen, 
   MainMenuScreen, 
   SetupScreen, 
   RoleRevealScreen,
@@ -30,6 +32,7 @@ import {
 import './index.css';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mode, setMode] = useState(null);
   const [phase, setPhase] = useState(PHASES.SETUP);
   
@@ -51,6 +54,12 @@ export default function App() {
   const [winner, setWinner] = useState(null);
   const [jesterWon, setJesterWon] = useState(false);
 
+  const handleVerify = async (code) => {
+    const isValid = await verifyAccessCode(code);
+    if (isValid) setIsAuthenticated(true);
+    return isValid;
+  };
+
   const startGame = () => {
     const initializedPlayers = distributeRoles(players, mode);
     setPlayers(initializedPlayers);
@@ -69,10 +78,19 @@ export default function App() {
     const currentPlayer = nightQueue[currentNightIndex];
     const newActions = { ...nightActions };
     
-    if (currentPlayer.role === ROLES.MAFIA && actions.targetId) newActions.mafiaTargetId = actions.targetId;
-    if (currentPlayer.role === ROLES.DOCTOR && actions.targetId) newActions.doctorTargetId = actions.targetId;
-    if (currentPlayer.role === ROLES.VIGILANTE && actions.targetId) newActions.vigilanteTargetId = actions.targetId;
-    if (actions.willTargetId) newActions.wills[currentPlayer.id] = actions.willTargetId;
+    // إصلاح ثغرة "اللاعب رقم صفر" (التأكد من أن القيمة ليست null أو undefined بدلاً من الفحص البسيط)
+    if (currentPlayer.role === ROLES.MAFIA && actions.targetId !== null && actions.targetId !== undefined) {
+      newActions.mafiaTargetId = actions.targetId;
+    }
+    if (currentPlayer.role === ROLES.DOCTOR && actions.targetId !== null && actions.targetId !== undefined) {
+      newActions.doctorTargetId = actions.targetId;
+    }
+    if (currentPlayer.role === ROLES.VIGILANTE && actions.targetId !== null && actions.targetId !== undefined) {
+      newActions.vigilanteTargetId = actions.targetId;
+    }
+    if (actions.willTargetId !== null && actions.willTargetId !== undefined) {
+      newActions.wills[currentPlayer.id] = actions.willTargetId;
+    }
 
     setNightActions(newActions);
 
@@ -89,7 +107,7 @@ export default function App() {
 
       // استخراج الوصية إن وجدت
       let willMsg = null;
-      if (result.mafiaKill && result.mafiaKill.deathWillTargetId !== null) {
+      if (result.mafiaKill && result.mafiaKill.deathWillTargetId !== null && result.mafiaKill.deathWillTargetId !== undefined) {
         const target = result.updatedPlayers.find(p => p.id === result.mafiaKill.deathWillTargetId);
         if (target) willMsg = `أنا أشك في: [ ${target.name} ]`;
       }
@@ -131,7 +149,7 @@ export default function App() {
       setPlayers(execResult.updatedPlayers);
       setExecutedPlayer(execResult.executedPlayer);
       
-      // إذا تم إعدام المختل، يفوز فوراً
+      // إذا تم إعدام المختل في المحكمة
       if (execResult.jesterWon) {
          setJesterWon(true);
          setPhase(PHASES.GAME_OVER);
@@ -179,7 +197,7 @@ export default function App() {
     setPhase(PHASES.ROLE_REVEAL); 
   };
 
-  // تم مسح سطر التحقق القديم هنا، واللعبة ستبدأ مباشرة من القائمة الرئيسية بعد اجتياز بوابة رقم الجوال
+  if (!isAuthenticated) return <GatewayScreen onVerify={handleVerify} />;
   if (!mode) return <MainMenuScreen onSelectMode={setMode} />;
 
   switch (phase) {
