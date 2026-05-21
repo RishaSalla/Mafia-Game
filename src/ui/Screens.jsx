@@ -262,12 +262,12 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
   const renderRoleAction = () => {
     if (investigationResult) {
       const isMafia = investigationResult.role === ROLES.MAFIA;
-      const exactRoleTitle = getRoleMeta(investigationResult.role).title;
+      const displayedRole = isMafia ? "مافيا" : "مواطن بريء"; // التعديل هنا
       return (
         <div style={{ padding: "20px", border: "1px solid var(--primary-gold)", borderRadius: "8px" }}>
           <p>نتيجة التحقيق السري:</p>
           <h2 style={{ color: isMafia ? "var(--crimson-red)" : "var(--primary-gold)", marginTop: "10px", fontSize: '1.8rem' }}>
-            [ {investigationResult.name} ] هو:<br/>{exactRoleTitle}
+            [ {investigationResult.name} ] هو:<br/>{displayedRole}
           </h2>
         </div>
       );
