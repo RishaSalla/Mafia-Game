@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ROLES } from '../logic/gameEngine';
 import { 
   MafiaIcon, 
@@ -10,7 +10,7 @@ import {
 } from './SVGGraphics';
 
 // ==========================================
-// 1. بيانات الأدوار الأصلية كاشفة الأوراق
+// 1. بيانات الأدوار الأصلية
 // ==========================================
 export const getRoleMeta = (role) => {
   const meta = {
@@ -66,14 +66,68 @@ export const RoleCard = ({ role }) => {
 };
 
 // ==========================================
-// 3. زر اللاعب الآمن (Anti-Focus & Meta-Gaming)
+// 3. زر الضغط المطول الآمن (جديد كلياً للحماية)
+// ==========================================
+export const HoldButton = ({ text, onComplete, className, disabled, style }) => {
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTime = 1000; // ثانية واحدة بالضبط
+  const intervalRef = useRef(null);
+
+  const startHold = (e) => {
+    if (disabled) return;
+    setHoldProgress(0);
+    const startTime = Date.now();
+    intervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min((elapsed / holdTime) * 100, 100);
+      setHoldProgress(progress);
+      if (progress >= 100) {
+        clearInterval(intervalRef.current);
+        onComplete();
+      }
+    }, 50);
+  };
+
+  const endHold = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setHoldProgress(0);
+  };
+
+  return (
+    <button
+      className={className}
+      disabled={disabled}
+      style={{ ...style, position: 'relative', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}
+      onMouseDown={startHold}
+      onMouseUp={endHold}
+      onMouseLeave={endHold}
+      onTouchStart={startHold}
+      onTouchEnd={endHold}
+      onContextMenu={(e) => e.preventDefault()} // يمنع خيارات المتصفح عند الضغط المطول
+    >
+      <div style={{
+        position: 'absolute', top: 0, right: 0, bottom: 0,
+        width: `${holdProgress}%`,
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        transition: 'width 0.05s linear',
+        zIndex: 1
+      }} />
+      <span style={{ position: 'relative', zIndex: 2 }}>
+        {holdProgress > 0 && holdProgress < 100 ? "استمر بالضغط..." : text}
+      </span>
+    </button>
+  );
+};
+
+// ==========================================
+// 4. زر اللاعب العادي 
 // ==========================================
 export const PlayerButton = ({ player, onClick, selected, disabled }) => {
   return (
     <button 
       className="btn btn-secondary" 
       onClick={(e) => {
-        e.currentTarget.blur(); // كسر أثر التحديد (Focus) فوراً لحماية السرية
+        e.currentTarget.blur(); 
         onClick(player.id);
       }}
       disabled={disabled}
@@ -100,7 +154,7 @@ export const PlayerButton = ({ player, onClick, selected, disabled }) => {
 };
 
 // ==========================================
-// 4. بطاقة اختيار الأطوار التسويقية الفخمة
+// 5. بطاقات الأطوار المزدوجة
 // ==========================================
 export const ModeCard = ({ title, description, isActive, onClick, isAdvanced }) => {
   const activeColor = isAdvanced ? 'var(--crimson-red)' : 'var(--primary-gold)';
@@ -127,7 +181,7 @@ export const ModeCard = ({ title, description, isActive, onClick, isAdvanced }) 
 };
 
 // ==========================================
-// 5. العداد الزمني (توقيت التبرير والنقاش)
+// 6. العداد الزمني 
 // ==========================================
 export const CountdownTimer = ({ initialSeconds, onExpire }) => {
   const [seconds, setSeconds] = useState(initialSeconds);
@@ -161,13 +215,15 @@ export const CountdownTimer = ({ initialSeconds, onExpire }) => {
 };
 
 // ==========================================
-// 6. زر ودليل اللعب الصامت (Help Inside Game)
+// 7. زر ودليل اللعب الصامت (مع دعم شاشات الآيفون)
 // ==========================================
 export const HelpButton = ({ onClick }) => (
   <button 
     onClick={onClick}
     style={{
-      position: 'absolute', top: '15px', right: '15px',
+      position: 'absolute', 
+      top: 'calc(15px + env(safe-area-inset-top, 10px))', // حماية من الكاميرا
+      right: '15px',
       background: 'none', border: 'none', cursor: 'pointer',
       color: 'var(--text-dim)', zIndex: 50, padding: '5px'
     }}
@@ -182,26 +238,28 @@ export const RulesModal = ({ onClose }) => (
   <div className="fade-in" style={{
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
     backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 100,
-    display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px'
+    display: 'flex', justifyContent: 'center', alignItems: 'center', 
+    padding: '20px', paddingTop: 'calc(20px + env(safe-area-inset-top, 10px))' // حماية إضافية للنافذة
   }}>
     <div className="card scroll-container" style={{ maxHeight: '85vh', overflowY: 'auto', border: '1px solid var(--primary-gold)' }}>
       <h2 style={{ color: 'var(--primary-gold)', borderBottom: '1px solid #333', paddingBottom: '10px' }}>دليل قوانين المافيا</h2>
 
       <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>أطوار اللعب الرئيسية:</h3>
       <p style={{ color: 'var(--text-dim)', textAlign: 'right', marginBottom: '10px', fontSize: '0.95rem' }}>
-        - <strong style={{color: '#fff'}}>المافيا الأصلية:</strong> العهد الكلاسيكي المباشر (مافيا، طبيب، محقق، مواطنين).
+        - <strong style={{color: '#fff'}}>المافيا الأصلية:</strong> العهد الكلاسيكي (مافيا، طبيب، محقق، مواطنين).
       </p>
       <p style={{ color: 'var(--text-dim)', textAlign: 'right', fontSize: '0.95rem' }}>
-        - <strong style={{color: '#fff'}}>المافيا الفوضى:</strong> الطور المجنون، يضيف (القناص والمختل الأناني)، بالإضافة إلى نظام الوصايا والمحكمة المعززة.
+        - <strong style={{color: '#fff'}}>المافيا الفوضى (التوزيع الذكي):</strong> يضاف المختل لـ 7 لاعبين فأكثر، والقناص لـ 8 فأكثر. <strong style={{color: 'var(--primary-gold)'}}>(يُنصح بـ 8 لاعبين للحصول على الفوضى الكاملة)</strong>.
       </p>
 
       <h3 style={{ color: '#fff', marginTop: '20px', textAlign: 'right' }}>القدرات والقوانين الصارمة:</h3>
       <ul style={{ color: 'var(--text-dim)', textAlign: 'right', paddingRight: '20px', lineHeight: '1.8', fontSize: '0.95rem' }}>
-        <li><strong>الطبيب:</strong> يحمي هدفاً كل ليلة، ويحق له حماية نفسه <strong style={{color: '#fff'}}>مرة واحدة فقط</strong> طوال اللعبة.</li>
-        <li><strong>المحقق:</strong> تحقيقه صادق ويكشف <strong style={{color: '#fff'}}>الدور الحقيقي والكامل</strong> للشخص المسؤل عنه فوراً ليلاً.</li>
-        <li><strong>القناص:</strong> يملك رصاصة واحدة. قتل المافيا أو المختل يجعله بطلاً، وقتل أي مواطن أو صاحب دور بريء يقتله فوراً بالانتحار صباحاً.</li>
-        <li><strong>المختل الأناني:</strong> يلعب وحده تماماً، يفوز فوراً وتنتهي اللعبة لصالحه إذا نجح في جعل المحكمة تعدمه بالتصويت أو جعل القناص يطلق النار عليه.</li>
-        <li><strong>المواطنون والمختل ليلاً:</strong> تظهر لهم شاشة أسماء مجبرين على لمسها عشوائياً للتمويه، حتى تتطابق حركة اليد للجميع ولا ينكشف أحد بجلسة التمرير.</li>
+        <li><strong>الطبيب:</strong> يحق له حماية نفسه <strong style={{color: '#fff'}}>مرة واحدة فقط</strong> طوال اللعبة.</li>
+        <li><strong>المحقق:</strong> تحقيقه صادق ويكشف <strong style={{color: '#fff'}}>الدور الحقيقي والكامل</strong> للشخص (حتى المختل والقناص).</li>
+        <li><strong>القناص:</strong> يملك رصاصة واحدة. قتل المافيا أو المختل يجعله بطلاً، وقتل أي مواطن أو دور بريء يقتله فوراً بالانتحار صباحاً.</li>
+        <li><strong>المختل الأناني:</strong> يلعب وحده، يفوز فوراً وتنتهي اللعبة لصالحه إذا نجح في جعل المحكمة تعدمه أو جعل القناص يطلق النار عليه.</li>
+        <li><strong>الوصية الجنائية:</strong> في طور الفوضى، يمكنك توجيه اتهام قبل موتك، وأصبح الآن اختيارياً (يمكنك اختيار عدم ترك وصية).</li>
+        <li><strong>الحماية البصرية:</strong> تم خلط الأسماء ديناميكياً في الشاشات، واستخدام (الضغط المطول) لكشف الأدوار منعاً للتخمين واللمس الخاطئ.</li>
       </ul>
 
       <button className="btn btn-primary" onClick={onClose} style={{ marginTop: '30px' }}>إغلاق وتكملة اللعب</button>
