@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { ROLES, MODES } from '../logic/gameEngine';
-import { RoleCard, PlayerButton, ModeCard, CountdownTimer, HelpButton, RulesModal, getRoleMeta } from './Components';
+import React, { useState, useMemo } from 'react';
+import { ROLES, MODES, shuffleArray } from '../logic/gameEngine';
+import { RoleCard, PlayerButton, ModeCard, CountdownTimer, HelpButton, RulesModal, getRoleMeta, HoldButton } from './Components';
 import { CitySkyline, NooseSVG, ShatteredGlassSVG, SmokeBackground } from './SVGGraphics';
 
 // ==========================================
-// 1. شاشة البوابة (بدون مصطلحات بوليسية)
+// 1. شاشة البوابة 
 // ==========================================
 export const GatewayScreen = ({ onVerify }) => {
   const [code, setCode] = useState("");
@@ -40,7 +40,7 @@ export const GatewayScreen = ({ onVerify }) => {
 };
 
 // ==========================================
-// 2. القائمة الرئيسية (الأسماء التسويقية المعتمدة)
+// 2. القائمة الرئيسية
 // ==========================================
 export const MainMenuScreen = ({ onSelectMode }) => {
   const [showRules, setShowRules] = useState(false);
@@ -63,7 +63,7 @@ export const MainMenuScreen = ({ onSelectMode }) => {
 
         <ModeCard 
           title="المافيا الفوضى" 
-          description="يضيف (القناص، المختل الأناني) ونظام الوصية الإجبارية وقفص الاتهام." 
+          description="توزيع ذكي للأدوار حسب العدد يضيف (المختل، القناص) ونظام المحكمة والوصايا." 
           isActive={false} 
           isAdvanced={true}
           onClick={() => onSelectMode(MODES.CHAOS)} 
@@ -132,7 +132,7 @@ export const SetupScreen = ({ players, setPlayers, startGame, mode }) => {
 };
 
 // ==========================================
-// 4. مرحلة كشف الأدوار
+// 4. مرحلة كشف الأدوار (باستخدام زر الضغط المطول)
 // ==========================================
 export const RoleRevealScreen = ({ players, onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -153,11 +153,15 @@ export const RoleRevealScreen = ({ players, onComplete }) => {
     <div className="center-content fade-in">
       <div className="card" style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         {!showRole ? (
-          <div style={{ margin: 'auto' }}>
+          <div style={{ margin: 'auto', width: '100%' }}>
             <h2 style={{ color: 'var(--text-dim)' }}>توزيع الأدوار</h2>
             <p style={{ marginTop: '10px' }}>الرجاء تمرير الجهاز بسرية إلى:</p>
             <h1 style={{ color: 'var(--primary-gold)', fontSize: '3rem', margin: '20px 0' }}>{player.name}</h1>
-            <button className="btn btn-primary" onClick={() => setShowRole(true)}>أنا {player.name}، اكشف دوري</button>
+            <HoldButton 
+              className="btn btn-primary" 
+              text={`أنا ${player.name}، اكشف دوري`} 
+              onComplete={() => setShowRole(true)} 
+            />
           </div>
         ) : (
           <>
@@ -214,7 +218,7 @@ export const GroupWakeScreen = ({ onContinue }) => (
 );
 
 // ==========================================
-// 6. شاشات الليل والتمرير 
+// 6. شاشات الليل والتمرير (حماية الخلط العشوائي والضغط المطول)
 // ==========================================
 export const NightTransitionScreen = ({ targetPlayer, onReady }) => (
   <div className="center-content fade-in">
@@ -222,27 +226,40 @@ export const NightTransitionScreen = ({ targetPlayer, onReady }) => (
     <div className="card" style={{ zIndex: 1, marginTop: '20px' }}>
       <p style={{ color: 'var(--text-dim)', fontSize: '1.2rem' }}>الرجاء تمرير الجهاز بسرية إلى:</p>
       <h1 style={{ color: "var(--primary-gold)", fontSize: "3.5rem", margin: "20px 0" }}>{targetPlayer.name}</h1>
-      <button className="btn btn-primary" onClick={onReady}>استلمت الجهاز</button>
+      <HoldButton 
+        className="btn btn-primary" 
+        text="استلمت الجهاز" 
+        onComplete={onReady} 
+      />
     </div>
   </div>
 );
 
 export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => {
   const [targetId, setTargetId] = useState(null);
-  const [willTargetId, setWillTargetId] = useState(null);
+  const [willTargetId, setWillTargetId] = useState("none");
   const [investigationResult, setInvestigationResult] = useState(null);
   const [showRules, setShowRules] = useState(false);
 
   const isChaos = mode === MODES.CHAOS;
-  const aliveOthers = players.filter(p => p.id !== player.id && p.isAlive);
+
+  // الخلط العشوائي للأسماء في كل دور لمنع التخمين البصري
+  const [shuffledAllAlive, shuffledOthers] = useMemo(() => {
+    const allAlive = players.filter(p => p.isAlive);
+    const others = allAlive.filter(p => p.id !== player.id);
+    return [shuffleArray([...allAlive]), shuffleArray([...others])];
+  }, [player.id, players]);
+
   const mafiaMates = players.filter(p => p.role === ROLES.MAFIA && p.id !== player.id && p.isAlive);
 
   const handleConfirm = () => {
-    onActionComplete({ targetId, willTargetId });
+    onActionComplete({ 
+      targetId, 
+      willTargetId: willTargetId === "none" ? null : Number(willTargetId) 
+    });
   };
 
   const renderRoleAction = () => {
-    // تحديث المحقق: يرى الدور التفصيلي الصريح (مافيا، مختل، طبيب، قناص..)
     if (investigationResult) {
       const isMafia = investigationResult.role === ROLES.MAFIA;
       const exactRoleTitle = getRoleMeta(investigationResult.role).title;
@@ -257,14 +274,14 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
     }
 
     let promptText = "";
-    let targetList = players.filter(p => p.isAlive && p.id !== player.id);
+    let targetList = shuffledOthers;
     let isDecoy = false;
 
     if (player.role === ROLES.MAFIA) {
       promptText = "من تريد أن تقتل الليلة؟";
     } else if (player.role === ROLES.DOCTOR) {
       promptText = player.hasSelfHealed ? "من تريد إنقاذه؟ (لا يمكنك حماية نفسك مرة أخرى)" : "من تريد إنقاذه الليلة؟";
-      targetList = player.hasSelfHealed ? aliveOthers : players.filter(p => p.isAlive); 
+      targetList = player.hasSelfHealed ? shuffledOthers : shuffledAllAlive; 
     } else if (player.role === ROLES.DETECTIVE) {
       promptText = "اختر شخصاً للتحقيق في هويته الكاملة:";
     } else if (player.role === ROLES.VIGILANTE) {
@@ -334,20 +351,24 @@ export const NightTurnScreen = ({ player, players, mode, onActionComplete }) => 
           <select 
             className="input-field" 
             style={{ fontSize: "1rem", padding: "10px", marginTop: "10px", backgroundColor: 'rgba(0,0,0,0.3)' }}
-            value={willTargetId || ""}
-            onChange={(e) => setWillTargetId(Number(e.target.value))}
+            value={willTargetId}
+            onChange={(e) => setWillTargetId(e.target.value)}
           >
-            <option value="" disabled>وجه اتهامك نحو...</option>
-            {aliveOthers.map(p => (
+            <option value="none">لا أريد ترك وصية (صمت تكتيكي)</option>
+            {shuffledOthers.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
         </div>
       )}
 
-      <button className="btn btn-primary" style={{ marginTop: "20px" }} onClick={handleConfirm} disabled={isConfirmDisabled}>
-        تأكيد وإنهاء دوري
-      </button>
+      <HoldButton 
+        className="btn btn-primary" 
+        style={{ marginTop: "20px" }} 
+        text="تأكيد وإنهاء دوري" 
+        onComplete={handleConfirm} 
+        disabled={isConfirmDisabled} 
+      />
     </div>
   );
 };
@@ -359,18 +380,16 @@ export const MorningSequenceScreen = ({ mafiaKill, savedByDoctor, vigilanteKill,
   const [stepIndex, setStepIndex] = useState(0);
   const events = [];
 
-  // إذا فاز المختل برصاصة القناص بالليل، نختصر الصباح وننتقل للنهاية
   if (jesterWon) {
     onComplete();
     return null;
   }
 
-  // الحدث 1: المافيا والطبيب (بدون كشف الدور)
   if (mafiaKill) {
     events.push({
       type: 'kill',
       title: 'جريمة المافيا',
-      text: `بكل أسف.. تم العثور على [ ${mafiaKill.name} ] مقتولاً الليلة الماضية.\n(تبين بعد تفتيشه أنه: مواطن بريء)`, // المافيا لا تقتل المافيا
+      text: `بكل أسف.. تم العثور على [ ${mafiaKill.name} ] مقتولاً الليلة الماضية.\n(تبين بعد تفتيشه أنه: مواطن بريء)`, 
       will: deathWillMessage,
       color: 'var(--crimson-red)',
       icon: <ShatteredGlassSVG />
@@ -393,7 +412,6 @@ export const MorningSequenceScreen = ({ mafiaKill, savedByDoctor, vigilanteKill,
     });
   }
 
-  // الحدث 2: القناص (بدون كشف الدور التفصيلي)
   if (vigilanteKill) {
     const isVictimMafia = vigilanteKill.role === ROLES.MAFIA;
     const hideRoleStr = isVictimMafia ? "مافيا" : "مواطن بريء";
@@ -477,7 +495,7 @@ export const DiscussionScreen = ({ aliveCount, onContinue }) => {
 };
 
 // ==========================================
-// 9. التصويت السري 
+// 9. التصويت السري (مع خلط الأسماء)
 // ==========================================
 export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
   const [votes, setVotes] = useState({});
@@ -485,7 +503,12 @@ export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
   const [step, setStep] = useState('call'); 
 
   const voter = alivePlayers[currentPlayerIndex];
-  const targets = alivePlayers.filter(p => p.id !== voter.id);
+  
+  // خلط الأسماء في شاشة التصويت لكل لاعب
+  const shuffledTargets = useMemo(() => {
+    const others = alivePlayers.filter(p => p.id !== voter.id);
+    return shuffleArray([...others]);
+  }, [voter.id, alivePlayers]);
 
   const handleVote = (targetId) => {
     const newVotes = { ...votes };
@@ -506,11 +529,15 @@ export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
     return (
       <div className="center-content fade-in">
         <div className="card" style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div style={{ margin: 'auto' }}>
+          <div style={{ margin: 'auto', width: '100%' }}>
             <h2 style={{ color: 'var(--text-dim)' }}>التصويت السري</h2>
             <p style={{ marginTop: '10px' }}>الرجاء تمرير الجهاز للتصويت إلى:</p>
             <h1 style={{ color: "var(--primary-gold)", fontSize: "3rem", margin: "20px 0" }}>{voter.name}</h1>
-            <button className="btn btn-primary" onClick={() => setStep('vote')}>أنا {voter.name}، جاهز للتصويت</button>
+            <HoldButton 
+              className="btn btn-primary" 
+              text={`أنا ${voter.name}، جاهز للتصويت`} 
+              onComplete={() => setStep('vote')} 
+            />
           </div>
         </div>
       </div>
@@ -524,7 +551,7 @@ export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
         <p style={{ margin: '15px 0', color: 'var(--text-dim)' }}>صوّت ضد المتهم (بسرعة وسرية):</p>
         
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
-          {targets.map(p => (
+          {shuffledTargets.map(p => (
             <PlayerButton key={p.id} player={p} onClick={() => handleVote(p.id)} />
           ))}
         </div>
@@ -542,7 +569,7 @@ export const VotingScreen = ({ alivePlayers, onVoteComplete }) => {
 };
 
 // ==========================================
-// 10. قفص الاتهام والقرار النهائي (جديد)
+// 10. قفص الاتهام والقرار النهائي 
 // ==========================================
 export const DefenseScreen = ({ accusedPlayer, onComplete }) => (
   <div className="center-content fade-in">
@@ -601,7 +628,7 @@ export const ExecutionScreen = ({ executedPlayer, onContinue }) => (
 );
 
 // ==========================================
-// 11. شاشة النهاية (Game Over - كشف جميع الأوراق)
+// 11. شاشة النهاية (Game Over)
 // ==========================================
 export const GameOverScreen = ({ winner, jesterWon, players, onRestart, onPlayAgain }) => {
   let title = "";
